@@ -1,0 +1,8 @@
+ELearning.API/bin/**
+ELearning.API/obj/**
+ELearning.Core/bin/**
+ELearning.Core/obj/**
+ELearning.Infrastructure/bin/**
+ELearning.Infrastructure/obj/**
+ELearning.Services/bin/**
+ELearning.Services/obj/**
