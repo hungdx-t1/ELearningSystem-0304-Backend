@@ -16,6 +16,9 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 builder.Services.AddScoped<ICourseService, CourseService>();
+builder.Services.AddScoped<ILessonService, LessonService>();
+builder.Services.AddScoped<IUserService, UserService>();
+
 
 // 2. Cấu hình Controllers và Swagger
 builder.Services.AddControllers();
