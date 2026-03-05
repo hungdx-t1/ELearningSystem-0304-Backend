@@ -30,8 +30,8 @@ public record AssignmentResponseDto(
     Guid LessonId,
     string Title,
     string? Description,
-    DateTime? DueDate,
-    DateTime CreatedAt
+    DateTime? DueDate
+    //DateTime CreatedAt
 );
 
 public record CreateAssignmentRequestDto(

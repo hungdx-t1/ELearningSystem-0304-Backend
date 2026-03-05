@@ -18,6 +18,7 @@ builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepositor
 builder.Services.AddScoped<ICourseService, CourseService>();
 builder.Services.AddScoped<ILessonService, LessonService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IAssignmentService, AssignmentService>();
 
 
 // 2. Cấu hình Controllers và Swagger
