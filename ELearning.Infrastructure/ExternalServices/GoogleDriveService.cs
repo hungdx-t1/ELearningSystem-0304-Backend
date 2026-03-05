@@ -14,7 +14,7 @@ public class GoogleDriveService : IGoogleDriveService
 
     private DriveService GetDriveService()
     {
-        // Đọc file JSON credential bạn tải từ Google Cloud Console
+        // Đọc file JSON credential được tải từ Google Cloud Console
         GoogleCredential credential;
         using (var stream = new FileStream(_credentialsFilePath, FileMode.Open, FileAccess.Read))
         {

@@ -6,6 +6,7 @@ using ELearning.Core.Interfaces;
 using ELearning.Infrastructure.Repositories;
 using ELearning.Core.Interfaces.Services;
 using ELearning.Services.Implements;
+using ELearning.Infrastructure.ExternalServices;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +20,7 @@ builder.Services.AddScoped<ICourseService, CourseService>();
 builder.Services.AddScoped<ILessonService, LessonService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAssignmentService, AssignmentService>();
+builder.Services.AddScoped<IGoogleDriveService, GoogleDriveService>();
 
 
 // 2. Cấu hình Controllers và Swagger
