@@ -11,6 +11,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.OpenApi;
+using Microsoft.OpenApi.Models;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,13 +27,10 @@ builder.Services.AddScoped<ILessonService, LessonService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAssignmentService, AssignmentService>();
 builder.Services.AddScoped<IGoogleDriveService, GoogleDriveService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 
 // 2. Cấu hình Controllers và Swagger
-// builder.Services.AddControllers();
-// builder.Services.AddEndpointsApiExplorer();
-// builder.Services.AddSwaggerGen(); // Đảm bảo đã cài Swashbuckle.AspNetCore
-
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -50,40 +49,56 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options =>
+builder.Services.AddOpenApi(options =>
 {
-    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    // Bước 1: Khai báo thẻ Bearer (Chỉ lưu trong từ điển Components)
+    options.AddDocumentTransformer((document, context, cancellationToken) =>
     {
-        Name = "Authorization",
-        Type = SecuritySchemeType.Http,
-        Scheme = "Bearer",
-        BearerFormat = "JWT",
-        In = ParameterLocation.Header,
-        Description = "Nhập Token vào đây. Ví dụ: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        document.Components ??= new OpenApiComponents();
+
+        // Khởi tạo SecuritySchemes nếu nó null (KHẮC PHỤC LỖI CS8602)
+#pragma warning disable CS8619 // Nullability of reference types in value doesn't match target type.
+        document.Components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
+#pragma warning restore CS8619 // Nullability of reference types in value doesn't match target type.
+
+        document.Components.SecuritySchemes.Add("Bearer", new OpenApiSecurityScheme
+        {
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT",
+            Description = "Dán Token vào đây"
+        });
+        return Task.CompletedTask;
     });
 
-    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    // Bước 2: Gắn ổ khóa lên từng API cụ thể (OperationTransformer)
+    options.AddOperationTransformer((operation, context, cancellationToken) =>
     {
+        operation.Security ??= new List<OpenApiSecurityRequirement>();
+        operation.Security.Add(new OpenApiSecurityRequirement
         {
-            new OpenApiSecurityScheme
             {
-                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
-            },
-            new string[] {}
-        }
+                new OpenApiSecurityScheme
+                {
+                    Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
+                },
+                Array.Empty<string>()
+            }
+        });
+        return Task.CompletedTask;
     });
 });
-
 var app = builder.Build();
 
 // 3. Pipeline xử lý request
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    app.MapOpenApi(); // Sinh ra bản vẽ chuẩn
+    app.MapScalarApiReference(); // Giao diện Scalar siêu đẹp thay thế Swagger
 }
 
 // app.UseHttpsRedirection();
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
