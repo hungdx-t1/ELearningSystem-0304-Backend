@@ -11,7 +11,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.OpenApi;
-using Microsoft.OpenApi.Models;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -51,16 +50,13 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApi(options =>
 {
-    // Bước 1: Khai báo thẻ Bearer (Chỉ lưu trong từ điển Components)
+    // 1. Khai báo thẻ Bearer (Cất vào kho Components)
     options.AddDocumentTransformer((document, context, cancellationToken) =>
     {
         document.Components ??= new OpenApiComponents();
-
-        // Khởi tạo SecuritySchemes nếu nó null (KHẮC PHỤC LỖI CS8602)
-#pragma warning disable CS8619 // Nullability of reference types in value doesn't match target type.
         document.Components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
-#pragma warning restore CS8619 // Nullability of reference types in value doesn't match target type.
-
+        
+        // Thêm ổ khóa vào kho với tên là "Bearer"
         document.Components.SecuritySchemes.Add("Bearer", new OpenApiSecurityScheme
         {
             Type = SecuritySchemeType.Http,
@@ -68,23 +64,20 @@ builder.Services.AddOpenApi(options =>
             BearerFormat = "JWT",
             Description = "Dán Token vào đây"
         });
+        
         return Task.CompletedTask;
     });
 
-    // Bước 2: Gắn ổ khóa lên từng API cụ thể (OperationTransformer)
+    // 2. Móc ổ khóa lên tất cả các API
     options.AddOperationTransformer((operation, context, cancellationToken) =>
     {
         operation.Security ??= new List<OpenApiSecurityRequirement>();
+        
         operation.Security.Add(new OpenApiSecurityRequirement
         {
-            {
-                new OpenApiSecurityScheme
-                {
-                    Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
-                },
-                Array.Empty<string>()
-            }
+            [new OpenApiSecuritySchemeReference("Bearer", context.Document)] = new List<string>()
         });
+        
         return Task.CompletedTask;
     });
 });
