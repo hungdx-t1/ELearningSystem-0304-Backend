@@ -25,7 +25,7 @@ builder.Services.AddScoped<ICourseService, CourseService>();
 builder.Services.AddScoped<ILessonService, LessonService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAssignmentService, AssignmentService>();
-builder.Services.AddScoped<IGoogleDriveService, GoogleDriveService>();
+builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
 
