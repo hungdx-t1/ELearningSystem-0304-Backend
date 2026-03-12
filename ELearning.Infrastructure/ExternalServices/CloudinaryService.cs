@@ -28,47 +28,44 @@ public class CloudinaryService : ICloudinaryService
 
         using var stream = file.OpenReadStream();
         
-        // Nhận diện loại file để Cloudinary xử lý tối ưu nhất
+        // Nhận diện loại file
         var isImage = file.ContentType.StartsWith("image/");
         var isVideo = file.ContentType.StartsWith("video/");
 
-        UploadParams uploadParams;
-
+        // Xử lý Upload trực tiếp theo từng loại file
         if (isImage)
         {
-            uploadParams = new ImageUploadParams
+            var uploadParams = new ImageUploadParams
             {
                 File = new FileDescription(file.FileName, stream),
                 Folder = folderName
             };
+            var result = await _cloudinary.UploadAsync(uploadParams);
+            if (result.Error != null) throw new Exception(result.Error.Message);
+            return result.SecureUrl.ToString();
         }
         else if (isVideo)
         {
-            uploadParams = new VideoUploadParams
+            var uploadParams = new VideoUploadParams
             {
                 File = new FileDescription(file.FileName, stream),
                 Folder = folderName
             };
+            var result = await _cloudinary.UploadAsync(uploadParams);
+            if (result.Error != null) throw new Exception(result.Error.Message);
+            return result.SecureUrl.ToString();
         }
         else
         {
-            // Dành cho PDF, DOCX, ZIP, JAR...
-            uploadParams = new RawUploadParams
+            // Dành cho PDF, DOCX, ZIP, JAR... (Dùng RawUploadParams)
+            var uploadParams = new RawUploadParams
             {
                 File = new FileDescription(file.FileName, stream),
                 Folder = folderName
             };
+            var result = await _cloudinary.UploadAsync(uploadParams);
+            if (result.Error != null) throw new Exception(result.Error.Message);
+            return result.SecureUrl.ToString();
         }
-
-        // Bắn lên mây
-        var uploadResult = await _cloudinary.UploadAsync(uploadParams);
-
-        if (uploadResult.Error != null)
-        {
-            throw new Exception($"Lỗi từ Cloudinary: {uploadResult.Error.Message}");
-        }
-
-        // Trả về cái Link an toàn (HTTPS)
-        return uploadResult.SecureUrl.ToString();
     }
 }
