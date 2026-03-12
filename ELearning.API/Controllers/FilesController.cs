@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ELearning.API.Controllers;
 
+[Obsolete("Google Drive integration is deprecated. Consider using Cloudinary for file uploads instead.")]
 [ApiController]
 [Route("api/[controller]")]
 // [Authorize] //TODO tạm thời bỏ auth để test, khi nào ghép frontend thì bật lại
