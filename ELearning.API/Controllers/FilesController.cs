@@ -32,7 +32,7 @@ public class FilesController : ControllerBase
         {
             // Gọi Service đẩy thẳng lên Google Drive
             // Nếu bạn đã tạo folder trên Drive, có thể truyền ID folder vào tham số thứ 2
-            var fileUrl = await _driveService.UploadFileAsync(file); 
+            var fileUrl = await _driveService.UploadFileAsync(file, "1EldoFPGUKb4Hei2HIRa42Gz9y_CbgiWE"); 
             
             // Trả về kết quả cho Angular/Flutter
             return Ok(new 

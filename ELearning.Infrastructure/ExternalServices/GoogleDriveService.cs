@@ -40,25 +40,39 @@ public class GoogleDriveService : IGoogleDriveService
             Name = $"{DateTime.UtcNow:yyyyMMddHHmmss}_{file.FileName}",
         };
 
-        // Nếu bạn muốn lưu vào 1 folder cụ thể trên Drive (Ví dụ: Folder "BaiTapSinhVien")
         if (!string.IsNullOrEmpty(folderId))
         {
             fileMetadata.Parents = new List<string> { folderId };
         }
 
-        // Upload file
         FilesResource.CreateMediaUpload request;
         using (var stream = file.OpenReadStream())
         {
-            request = service.Files.Create(fileMetadata, stream, file.ContentType);
-            request.Fields = "id, webViewLink, webContentLink"; // Lấy link sau khi up xong
-            await request.UploadAsync();
+            // 1. Xử lý an toàn nếu file (.jar, .zip...) không có ContentType
+            var contentType = string.IsNullOrEmpty(file.ContentType) ? "application/octet-stream" : file.ContentType;
+
+            request = service.Files.Create(fileMetadata, stream, contentType);
+            request.Fields = "id, webViewLink, webContentLink";
+
+            // 2. Chờ upload và LẤY TRẠNG THÁI TIẾN TRÌNH
+            var progress = await request.UploadAsync();
+
+            // 3. KIỂM TRA LỖI TỪ GOOGLE
+            if (progress.Status == Google.Apis.Upload.UploadStatus.Failed)
+            {
+                throw new Exception($"Lỗi từ Google Drive: {progress.Exception?.Message}");
+            }
         }
 
         var uploadedFile = request.ResponseBody;
 
-        // BƯỚC QUAN TRỌNG: Cấp quyền "Anyone with the link can view"
-        // Để Frontend Angular/Flutter có thể load được video/ảnh mà không cần bắt sinh viên đăng nhập Google
+        // Đề phòng Google giở chứng không trả về file
+        if (uploadedFile == null)
+        {
+            throw new Exception("Upload thành công nhưng Google không trả về thông tin file.");
+        }
+
+        // 4. Phân quyền xem công khai
         var permission = new Google.Apis.Drive.v3.Data.Permission
         {
             Type = "anyone",
@@ -66,9 +80,7 @@ public class GoogleDriveService : IGoogleDriveService
         };
         await service.Permissions.Create(permission, uploadedFile.Id).ExecuteAsync();
 
-        // webViewLink: Mở ra giao diện xem (để nhúng PDF, Video)
-        // webContentLink: Link tải trực tiếp
-        return uploadedFile.WebViewLink; 
+        return uploadedFile.WebViewLink;
     }
 
     public async Task<bool> DeleteFileAsync(string fileId)
