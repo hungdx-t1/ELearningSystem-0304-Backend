@@ -1,5 +1,6 @@
 using ELearning.Core.DTOs.Lesson;
 using ELearning.Core.Entities;
+using ELearning.Core.Enums;
 using ELearning.Core.Interfaces;
 using ELearning.Core.Interfaces.Services;
 
@@ -41,6 +42,25 @@ public class LessonService : ILessonService
 
     public async Task<LessonResponseDto> CreateLessonAsync(CreateLessonRequestDto request)
     {
+        // 1. Tự động tính toán SortOrder nếu Frontend không truyền (hoặc truyền 0)
+        int newSortOrder = request.SortOrder;
+        if (newSortOrder <= 0)
+        {
+            var existingLessons = await _lessonRepository.FindAsync(l => l.ChapterId == request.ChapterId);
+            newSortOrder = existingLessons.Any() ? existingLessons.Max(l => l.SortOrder) + 1 : 1;
+        }
+
+        // 2. Validate nghiệp vụ cơ bản (Bảo vệ dữ liệu rác)
+        if (request.Type == LessonType.Video && string.IsNullOrEmpty(request.VideoUrl))
+        {
+            throw new ArgumentException("Bài học dạng Video bắt buộc phải có VideoUrl (Link Cloudinary hoặc Youtube).");
+        }
+        if (request.Type == LessonType.Document && string.IsNullOrEmpty(request.DocumentUrl))
+        {
+            throw new ArgumentException("Bài học dạng Tài liệu bắt buộc phải có DocumentUrl.");
+        }
+
+        // 3. Khởi tạo và Lưu DB
         var newLesson = new Lesson
         {
             Id = Guid.NewGuid(),
@@ -51,7 +71,7 @@ public class LessonService : ILessonService
             VideoUrl = request.VideoUrl,
             DocumentUrl = request.DocumentUrl,
             Duration = request.Duration,
-            SortOrder = request.SortOrder
+            SortOrder = newSortOrder // Đã dùng số tự tính
         };
 
         await _lessonRepository.AddAsync(newLesson);
@@ -63,6 +83,8 @@ public class LessonService : ILessonService
         );
     }
 
+
+    // TODO thêm LessonType
     public async Task<bool> UpdateLessonAsync(Guid id, UpdateLessonRequestDto request)
     {
         var lesson = await _lessonRepository.GetByIdAsync(id);
@@ -89,4 +111,6 @@ public class LessonService : ILessonService
         _lessonRepository.Delete(lesson);
         return await _lessonRepository.SaveChangesAsync();
     }
+
+
 }
