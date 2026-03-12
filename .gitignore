@@ -6,3 +6,4 @@ ELearning.Infrastructure/bin/**
 ELearning.Infrastructure/obj/**
 ELearning.Services/bin/**
 ELearning.Services/obj/**
+ELearning.API/google_credentials.json
