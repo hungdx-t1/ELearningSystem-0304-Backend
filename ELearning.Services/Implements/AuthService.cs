@@ -29,7 +29,7 @@ public class AuthService : IAuthService
         var user = users.FirstOrDefault();
 
         // 2. Kiểm tra Pass (TODO: Sau này bạn nhớ dùng BCrypt.Verify() chỗ này nhé)
-        if (user == null || user.PasswordHash != request.Password)
+        if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
         {
             return null; // Trả về null nếu sai email hoặc pass
         }
@@ -61,7 +61,7 @@ public class AuthService : IAuthService
         var jwtString = tokenHandler.WriteToken(token);
 
         var userDto = new UserResponseDto(user.Id, user.UserCode, user.FullName, user.Email, user.Role, user.AvatarUrl, user.DateOfBirth, user.AdministrativeClass, user.IsActive, user.CreatedAt);
-        
+
         return new LoginResponseDto(jwtString, userDto);
     }
 
@@ -69,7 +69,7 @@ public class AuthService : IAuthService
     {
         // 1. Kiểm tra xem Email đã có ai xài chưa
         var existingUsers = await _userRepository.FindAsync(u => u.Email == request.Email);
-        if (existingUsers.Any()) 
+        if (existingUsers.Any())
             return false; // Email đã tồn tại
 
         // 2. Tạo User mới (Nhớ băm mật khẩu ra, KHÔNG lưu mật khẩu gốc)
@@ -79,7 +79,7 @@ public class AuthService : IAuthService
             Email = request.Email,
             FullName = request.FullName,
             Role = request.Role,
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password), 
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
             CreatedAt = DateTime.UtcNow
         };
 
