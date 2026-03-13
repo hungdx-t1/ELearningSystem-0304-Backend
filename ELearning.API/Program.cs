@@ -28,6 +28,7 @@ builder.Services.AddScoped<IAssignmentService, AssignmentService>();
 builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IChapterService, ChapterService>();
+builder.Services.AddScoped<ISubmissionService, SubmissionService>();
 
 
 // 2. Cấu hình Controllers và Swagger
