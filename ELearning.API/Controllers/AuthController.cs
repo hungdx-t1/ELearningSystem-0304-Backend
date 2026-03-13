@@ -25,4 +25,15 @@ public class AuthController : ControllerBase
 
         return Ok(result);
     }
+
+    [HttpPost("register")]
+    public async Task<IActionResult> Register([FromBody] RegisterRequestDto request)
+    {
+        var isSuccess = await _authService.RegisterAsync(request);
+        
+        if (!isSuccess)
+            return BadRequest(new { message = "Email này đã được sử dụng!" });
+
+        return Ok(new { message = "Tạo tài khoản thành công! Mời bạn đăng nhập." });
+    }
 }

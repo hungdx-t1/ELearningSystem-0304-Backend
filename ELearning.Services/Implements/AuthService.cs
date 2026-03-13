@@ -64,4 +64,28 @@ public class AuthService : IAuthService
         
         return new LoginResponseDto(jwtString, userDto);
     }
+
+    public async Task<bool> RegisterAsync(RegisterRequestDto request)
+    {
+        // 1. Kiểm tra xem Email đã có ai xài chưa
+        var existingUsers = await _userRepository.FindAsync(u => u.Email == request.Email);
+        if (existingUsers.Any()) 
+            return false; // Email đã tồn tại
+
+        // 2. Tạo User mới (Nhớ băm mật khẩu ra, KHÔNG lưu mật khẩu gốc)
+        var newUser = new User
+        {
+            Id = Guid.NewGuid(),
+            Email = request.Email,
+            FullName = request.FullName,
+            Role = request.Role,
+            // Dùng BCrypt để băm mật khẩu thành một chuỗi loằng ngoằng
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password), 
+            CreatedAt = DateTime.UtcNow
+        };
+
+        // 3. Lưu vào DB
+        await _userRepository.AddAsync(newUser);
+        return await _userRepository.SaveChangesAsync();
+    }
 }
