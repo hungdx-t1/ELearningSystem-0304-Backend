@@ -29,7 +29,8 @@ builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IChapterService, ChapterService>();
 builder.Services.AddScoped<ISubmissionService, SubmissionService>();
-
+builder.Services.AddScoped<IClassService, ClassService>();
+builder.Services.AddScoped<IAiChatService, AiChatService>();
 
 // 2. Cấu hình Controllers và Swagger
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
