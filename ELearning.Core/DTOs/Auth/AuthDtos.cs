@@ -1,4 +1,5 @@
 using ELearning.Core.DTOs.User;
+using ELearning.Core.Enums;
 
 namespace ELearning.Core.DTOs.Auth;
 
@@ -12,5 +13,5 @@ public record RegisterRequestDto(
     string Email, 
     string Password, 
     string FullName, 
-    string Role = "Student" // Mặc định tạo ra là Sinh viên
+    UserRole Role = UserRole.Student // Sửa string thành UserRole
 );

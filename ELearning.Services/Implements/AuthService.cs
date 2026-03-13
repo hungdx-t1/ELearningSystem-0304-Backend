@@ -79,7 +79,6 @@ public class AuthService : IAuthService
             Email = request.Email,
             FullName = request.FullName,
             Role = request.Role,
-            // Dùng BCrypt để băm mật khẩu thành một chuỗi loằng ngoằng
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password), 
             CreatedAt = DateTime.UtcNow
         };
