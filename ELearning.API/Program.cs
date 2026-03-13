@@ -15,7 +15,17 @@ using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Cấu hình Database
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins("http://localhost:4200") // Mở cửa riêng cho Angular
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+
+// Cấu hình Database
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
@@ -32,7 +42,7 @@ builder.Services.AddScoped<ISubmissionService, SubmissionService>();
 builder.Services.AddScoped<IClassService, ClassService>();
 builder.Services.AddScoped<IAiChatService, AiChatService>();
 
-// 2. Cấu hình Controllers và Swagger
+// Cấu hình Controllers và Swagger
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -86,12 +96,14 @@ builder.Services.AddOpenApi(options =>
 });
 var app = builder.Build();
 
-// 3. Pipeline xử lý request
+// Pipeline xử lý request
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi(); // Sinh ra bản vẽ chuẩn
     app.MapScalarApiReference(); // Giao diện Scalar siêu đẹp thay thế Swagger
 }
+
+app.UseCors("AllowFrontend");
 
 // app.UseHttpsRedirection();
 app.UseAuthentication();
