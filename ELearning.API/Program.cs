@@ -42,6 +42,9 @@ builder.Services.AddScoped<ISubmissionService, SubmissionService>();
 builder.Services.AddScoped<IClassService, ClassService>();
 builder.Services.AddScoped<IAiChatService, AiChatService>();
 
+builder.Services.AddHttpClient(); // Cho phép dùng HttpClient
+builder.Services.AddScoped<IAiService, AiService>();
+
 // Cấu hình Controllers và Swagger
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
