@@ -42,7 +42,7 @@ public class AdminController : ControllerBase
 
                     if (string.IsNullOrEmpty(email)) continue; // Bỏ qua dòng trống
 
-                    // TODO: Tại đây, bạn sẽ gọi _authService.RegisterAsync(...) để lưu vào DB
+                    // TODO: Tại đây gọi _authService.RegisterAsync(...) để lưu vào DB
                     // var isSuccess = await _authService.RegisterAsync(new RegisterRequestDto(email, password, fullName, "Student"));
                     
                     importedUsers.Add(fullName ?? email);
@@ -54,5 +54,61 @@ public class AdminController : ControllerBase
             message = $"Đã nhập thành công {importedUsers.Count} tài khoản!",
             users = importedUsers 
         });
+    }
+
+    [HttpGet("users/export")]
+    public IActionResult ExportUsers()
+    {
+        ExcelPackage.License.SetNonCommercialPersonal("LMS Project");
+
+        // Tạm thời giả lập danh sách User (Sau này bạn gọi từ DB ra bằng Entity Framework)
+        var users = new List<dynamic>
+        {
+            new { FullName = "Nguyễn Văn A", Email = "nguyenvana@gmail.com", Role = "Student", Status = "Hoạt động" },
+            new { FullName = "Trần Thị B", Email = "tranthib@gmail.com", Role = "Instructor", Status = "Hoạt động" },
+            new { FullName = "Quản trị viên C", Email = "admin@lms.com", Role = "Admin", Status = "Khóa" }
+        };
+
+        using var package = new ExcelPackage();
+        var worksheet = package.Workbook.Worksheets.Add("DanhSachNguoiDung");
+
+        // 1. Tạo thanh Tiêu đề (Header)
+        worksheet.Cells[1, 1].Value = "STT";
+        worksheet.Cells[1, 2].Value = "Họ và Tên";
+        worksheet.Cells[1, 3].Value = "Email";
+        worksheet.Cells[1, 4].Value = "Vai trò";
+        worksheet.Cells[1, 5].Value = "Trạng thái";
+
+        // Tô màu xám và in đậm cho Header trông cho chuyên nghiệp
+        using (var range = worksheet.Cells[1, 1, 1, 5])
+        {
+            range.Style.Font.Bold = true;
+            range.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+            range.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGray);
+        }
+
+        // 2. Đổ dữ liệu từ danh sách vào các dòng
+        for (int i = 0; i < users.Count; i++)
+        {
+            var row = i + 2; // Dòng 1 là header rồi nên data bắt đầu từ dòng 2
+            worksheet.Cells[row, 1].Value = i + 1;
+            worksheet.Cells[row, 2].Value = users[i].FullName;
+            worksheet.Cells[row, 3].Value = users[i].Email;
+            worksheet.Cells[row, 4].Value = users[i].Role;
+            worksheet.Cells[row, 5].Value = users[i].Status;
+        }
+
+        // Tự động căn chỉnh độ rộng cột cho đẹp, không bị chèn chữ
+        worksheet.Cells.AutoFitColumns();
+
+        // 3. Đóng gói thành file và gửi về
+        var stream = new MemoryStream();
+        package.SaveAs(stream);
+        stream.Position = 0; // Trả con trỏ về đầu stream để người nhận đọc được
+
+        string excelName = $"DanhSachNguoiDung_{DateTime.Now:yyyyMMdd}.xlsx";
+        
+        // Trả về file với định dạng chuẩn của Excel
+        return File(stream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", excelName);
     }
 }
