@@ -18,7 +18,7 @@ public class AdminController : ControllerBase
             return BadRequest(new { message = "Chỉ hỗ trợ định dạng .xls hoặc .xlsx" });
 
         // Khai báo bản quyền sử dụng EPPlus (Bắt buộc từ bản 5.0 trở đi)
-        ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+        ExcelPackage.License.SetNonCommercialPersonal("LMS Project");
 
         var importedUsers = new List<string>(); // Danh sách tạm để chứa tên người dùng vừa import
 
