@@ -80,7 +80,10 @@ public class AuthService : IAuthService
             FullName = request.FullName,
             Role = request.Role,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
-            CreatedAt = DateTime.UtcNow
+         //   UserCode = request.UserCode ?? $"USR-{new Random().Next(1000, 9999)}",
+            UserCode = $"USR-{new Random().Next(1000, 9999)}",
+            CreatedAt = DateTime.UtcNow,
+            IsActive = true
         };
 
         // 3. Lưu vào DB
