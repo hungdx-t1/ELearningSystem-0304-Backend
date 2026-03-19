@@ -1,3 +1,6 @@
+using ELearning.Core.DTOs.User;
+using ELearning.Core.Enums;
+using ELearning.Core.Interfaces.Services;
 using Microsoft.AspNetCore.Mvc;
 using OfficeOpenXml; // EPPlus
 
@@ -7,108 +10,163 @@ namespace ELearning.API.Controllers;
 [Route("api/[controller]")]
 public class AdminController : ControllerBase
 {
+    private readonly IUserService _userService;
+
+    public AdminController(IUserService userService)
+    {
+        _userService = userService;
+    }
+
     [HttpPost("users/import")]
     public async Task<IActionResult> ImportUsers(IFormFile file)
     {
-        // 1. Kiểm tra file có tồn tại và đúng định dạng không
         if (file == null || file.Length == 0)
             return BadRequest(new { message = "Vui lòng chọn một file Excel hợp lệ!" });
 
         if (!file.FileName.EndsWith(".xls") && !file.FileName.EndsWith(".xlsx"))
             return BadRequest(new { message = "Chỉ hỗ trợ định dạng .xls hoặc .xlsx" });
 
-        // Khai báo bản quyền sử dụng EPPlus (Bắt buộc từ bản 5.0 trở đi)
         ExcelPackage.License.SetNonCommercialPersonal("LMS Project");
 
-        var importedUsers = new List<string>(); // Danh sách tạm để chứa tên người dùng vừa import
+        var importedUsers = new List<string>();
+        var errorRows = new List<string>(); // Danh sách chứa các dòng bị lỗi để báo cáo
 
-        // 2. Mở file ra đọc
         using (var stream = new MemoryStream())
         {
             await file.CopyToAsync(stream);
             using (var package = new ExcelPackage(stream))
             {
-                // Lấy cái Sheet đầu tiên (Sheet1)
                 ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
                 var rowCount = worksheet.Dimension.Rows;
 
-                // Vòng lặp đọc từ dòng số 2 (Bỏ qua dòng 1 là Tiêu đề cột)
+                // Đọc từ dòng 2 (Bỏ qua header)
                 for (int row = 2; row <= rowCount; row++)
                 {
-                    // Lấy dữ liệu từng cột (Giả sử Cột 1: Tên, Cột 2: Email, Cột 3: Pass)
                     var fullName = worksheet.Cells[row, 1].Value?.ToString()?.Trim();
                     var email = worksheet.Cells[row, 2].Value?.ToString()?.Trim();
                     var password = worksheet.Cells[row, 3].Value?.ToString()?.Trim();
+                    var roleString = worksheet.Cells[row, 4].Value?.ToString()?.Trim();
+                    var adminClass = worksheet.Cells[row, 5].Value?.ToString()?.Trim();
 
-                    if (string.IsNullOrEmpty(email)) continue; // Bỏ qua dòng trống
+                    // Bỏ qua nếu dòng đó trống Tên hoặc Email
+                    if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(fullName)) 
+                        continue; 
 
-                    // TODO: Tại đây gọi _authService.RegisterAsync(...) để lưu vào DB
-                    // var isSuccess = await _authService.RegisterAsync(new RegisterRequestDto(email, password, fullName, "Student"));
-                    
-                    importedUsers.Add(fullName ?? email);
+                    try
+                    {
+                        // 1. PHIÊN DỊCH VAI TRÒ (Từ chữ trong Excel sang Enum)
+                        UserRole role = UserRole.Student; // Mặc định là Học viên
+                        if (!string.IsNullOrEmpty(roleString))
+                        {
+                            var r = roleString.ToLower();
+                            if (r.Contains("admin") || r.Contains("quản trị")) role = UserRole.Admin;
+                            else if (r.Contains("instructor") || r.Contains("giảng viên")) role = UserRole.Instructor;
+                        }
+
+                        // 2. SINH MÃ USER CODE (Vì file Excel không có nhưng DTO lại bắt buộc)
+                        string prefix = role == UserRole.Student ? "STU" : (role == UserRole.Instructor ? "INS" : "ADM");
+                        string randomSuffix = Guid.NewGuid().ToString().Substring(0, 4).ToUpper();
+                        string userCode = $"{prefix}-{DateTime.Now:yyMM}-{randomSuffix}";
+
+                        // 3. XỬ LÝ MẬT KHẨU MẶC ĐỊNH (Nếu Excel không điền pass)
+                        string finalPassword = string.IsNullOrEmpty(password) ? "Default@123" : password;
+
+                        // 4. GÓI DỮ LIỆU VÀO DTO (Lưu ý: dùng đúng thứ tự khai báo của record)
+                        var requestDto = new CreateUserRequestDto(
+                            userCode,
+                            fullName,
+                            email,
+                            finalPassword,
+                            role,
+                            adminClass
+                        );
+
+                        // 5. GỌI SERVICE LƯU XUỐNG DB
+                        await _userService.CreateUserAsync(requestDto);
+                        
+                        importedUsers.Add(email);
+                    }
+                    catch (Exception ex)
+                    {
+                        // Nếu dòng này bị lỗi (ví dụ: trùng email), ghi nhận lại và chạy tiếp dòng sau
+                        errorRows.Add($"Dòng {row} ({email}): {ex.Message}");
+                    }
                 }
             }
         }
 
+        // Trả về báo cáo chi tiết
         return Ok(new { 
             message = $"Đã nhập thành công {importedUsers.Count} tài khoản!",
-            users = importedUsers 
+            successCount = importedUsers.Count,
+            errors = errorRows 
         });
     }
-
+    
     [HttpGet("users/export")]
-    public IActionResult ExportUsers()
+    public async Task<IActionResult> ExportUsers()
     {
         ExcelPackage.License.SetNonCommercialPersonal("LMS Project");
 
-        // Tạm thời giả lập danh sách User (Sau này bạn gọi từ DB ra bằng Entity Framework)
-        var users = new List<dynamic>
-        {
-            new { FullName = "Nguyễn Văn A", Email = "nguyenvana@gmail.com", Role = "Student", Status = "Hoạt động" },
-            new { FullName = "Trần Thị B", Email = "tranthib@gmail.com", Role = "Instructor", Status = "Hoạt động" },
-            new { FullName = "Quản trị viên C", Email = "admin@lms.com", Role = "Admin", Status = "Khóa" }
-        };
+        var users = await _userService.GetAllUsersAsync();
+        var userList = users.ToList(); // Ép sang List để dễ đếm index trong vòng lặp
 
         using var package = new ExcelPackage();
         var worksheet = package.Workbook.Worksheets.Add("DanhSachNguoiDung");
 
-        // 1. Tạo thanh Tiêu đề (Header)
-        worksheet.Cells[1, 1].Value = "STT";
-        worksheet.Cells[1, 2].Value = "Họ và Tên";
-        worksheet.Cells[1, 3].Value = "Email";
-        worksheet.Cells[1, 4].Value = "Vai trò";
-        worksheet.Cells[1, 5].Value = "Trạng thái";
+        // 3. TẠO THANH TIÊU ĐỀ (HEADER) - Chuẩn theo UserResponseDto
+        string[] headers = { "STT", "Mã Định Danh", "Họ và Tên", "Email", "Vai trò", "Lớp hành chính", "Trạng thái", "Ngày tham gia" };
+        
+        for (int i = 0; i < headers.Length; i++)
+        {
+            worksheet.Cells[1, i + 1].Value = headers[i];
+        }
 
-        // Tô màu xám và in đậm cho Header trông cho chuyên nghiệp
-        using (var range = worksheet.Cells[1, 1, 1, 5])
+        // Tô màu xám và in đậm cho Header
+        using (var range = worksheet.Cells[1, 1, 1, headers.Length])
         {
             range.Style.Font.Bold = true;
             range.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
             range.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGray);
         }
 
-        // 2. Đổ dữ liệu từ danh sách vào các dòng
-        for (int i = 0; i < users.Count; i++)
+        // 4. ĐỔ DỮ LIỆU THẬT VÀO TỪNG DÒNG
+        for (int i = 0; i < userList.Count; i++)
         {
-            var row = i + 2; // Dòng 1 là header rồi nên data bắt đầu từ dòng 2
-            worksheet.Cells[row, 1].Value = i + 1;
-            worksheet.Cells[row, 2].Value = users[i].FullName;
-            worksheet.Cells[row, 3].Value = users[i].Email;
-            worksheet.Cells[row, 4].Value = users[i].Role;
-            worksheet.Cells[row, 5].Value = users[i].Status;
+            var user = userList[i];
+            var row = i + 2; // Bắt đầu ghi từ dòng số 2
+
+            // Phiên dịch Role Enum sang tiếng Việt cho Sếp dễ đọc
+            string roleName = user.Role switch
+            {
+                UserRole.Admin => "Quản trị viên",
+                UserRole.Instructor => "Giảng viên",
+                UserRole.Student => "Học viên",
+                _ => "Chưa xác định"
+            };
+
+            // Điền dữ liệu
+            worksheet.Cells[row, 1].Value = i + 1; // Số thứ tự tự tăng
+            worksheet.Cells[row, 2].Value = user.UserCode;
+            worksheet.Cells[row, 3].Value = user.FullName;
+            worksheet.Cells[row, 4].Value = user.Email;
+            worksheet.Cells[row, 5].Value = roleName; // Chữ đã được dịch
+            worksheet.Cells[row, 6].Value = user.AdministrativeClass ?? "Chưa xếp lớp"; // Nếu null thì báo chưa xếp
+            worksheet.Cells[row, 7].Value = user.IsActive ? "Hoạt động" : "Khóa";
+            worksheet.Cells[row, 8].Value = user.CreatedAt.ToString("dd/MM/yyyy HH:mm"); // Format ngày tháng cho đẹp
         }
 
-        // Tự động căn chỉnh độ rộng cột cho đẹp, không bị chèn chữ
+        // Tự động căn chỉnh độ rộng các cột sao cho không bị che mất chữ
         worksheet.Cells.AutoFitColumns();
 
-        // 3. Đóng gói thành file và gửi về
+        // 5. ĐÓNG GÓI VÀ GỬI VỀ FRONTEND
         var stream = new MemoryStream();
-        package.SaveAs(stream);
-        stream.Position = 0; // Trả con trỏ về đầu stream để người nhận đọc được
+        await package.SaveAsAsync(stream); // Dùng Async lưu file cho mượt Server
+        stream.Position = 0; 
 
-        string excelName = $"DanhSachNguoiDung_{DateTime.Now:yyyyMMdd}.xlsx";
+        // Tên file có kèm thời gian thực để tải nhiều lần không bị trùng tên
+        string excelName = $"DanhSachNguoiDung_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
         
-        // Trả về file với định dạng chuẩn của Excel
         return File(stream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", excelName);
     }
 }
