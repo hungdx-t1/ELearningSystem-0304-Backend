@@ -37,9 +37,7 @@ public class UserService : IUserService
 
     public async Task<UserResponseDto> CreateUserAsync(CreateUserRequestDto request)
     {
-        // TODO: Trong thực tế, bạn phải dùng BCrypt để Hash cái request.Password này
-        // Tạm thời để string thuần để test chức năng trước
-        string hashedPassword = request.Password;
+        string hashedPassword = BCrypt.Net.BCrypt.HashPassword(request.Password);
 
         var newUser = new User
         {
