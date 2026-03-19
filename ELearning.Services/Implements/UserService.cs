@@ -17,9 +17,9 @@ public class UserService : IUserService
     public async Task<IEnumerable<UserResponseDto>> GetAllUsersAsync()
     {
         var users = await _userRepository.GetAllAsync();
-        
+
         return users.Select(u => new UserResponseDto(
-            u.Id, u.UserCode, u.FullName, u.Email, u.Role, 
+            u.Id, u.UserCode, u.FullName, u.Email, u.Role,
             u.AvatarUrl, u.DateOfBirth, u.AdministrativeClass, u.IsActive, u.CreatedAt
         ));
     }
@@ -30,7 +30,7 @@ public class UserService : IUserService
         if (user == null) return null;
 
         return new UserResponseDto(
-            user.Id, user.UserCode, user.FullName, user.Email, user.Role, 
+            user.Id, user.UserCode, user.FullName, user.Email, user.Role,
             user.AvatarUrl, user.DateOfBirth, user.AdministrativeClass, user.IsActive, user.CreatedAt
         );
     }
@@ -39,7 +39,7 @@ public class UserService : IUserService
     {
         // TODO: Trong thực tế, bạn phải dùng BCrypt để Hash cái request.Password này
         // Tạm thời để string thuần để test chức năng trước
-        string hashedPassword = request.Password; 
+        string hashedPassword = request.Password;
 
         var newUser = new User
         {
@@ -58,7 +58,7 @@ public class UserService : IUserService
         await _userRepository.SaveChangesAsync();
 
         return new UserResponseDto(
-            newUser.Id, newUser.UserCode, newUser.FullName, newUser.Email, newUser.Role, 
+            newUser.Id, newUser.UserCode, newUser.FullName, newUser.Email, newUser.Role,
             newUser.AvatarUrl, newUser.DateOfBirth, newUser.AdministrativeClass, newUser.IsActive, newUser.CreatedAt
         );
     }
@@ -85,6 +85,17 @@ public class UserService : IUserService
         if (user == null) return false;
 
         _userRepository.Delete(user);
+        return await _userRepository.SaveChangesAsync();
+    }
+
+    public async Task<bool> ToggleUserStatusAsync(Guid id)
+    {
+        var user = await _userRepository.GetByIdAsync(id);
+        if (user == null) return false;
+
+        user.IsActive = !user.IsActive;
+        _userRepository.Update(user);
+
         return await _userRepository.SaveChangesAsync();
     }
 }

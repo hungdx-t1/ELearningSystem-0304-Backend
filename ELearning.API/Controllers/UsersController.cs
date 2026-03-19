@@ -5,7 +5,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace ELearning.API.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+// [Route("api/[controller]")]
+[Route("api/admin/users")]
 public class UsersController : ControllerBase
 {
     private readonly IUserService _userService;
@@ -48,12 +49,22 @@ public class UsersController : ControllerBase
         return NoContent();
     }
 
-    // Khóa/Xóa tài khoản
+    // Xóa tài khoản
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {
         var isDeleted = await _userService.DeleteUserAsync(id);
-        if (!isDeleted) return NotFound();
+        if (!isDeleted) return NotFound(new { message = "Không tìm thấy người dùng" });
         return NoContent();
+    }
+
+    // khóa/mở tài khoản
+    [HttpPatch("{id:guid}/toggle-status")]
+    public async Task<IActionResult> ToggleStatus(Guid id)
+    {
+        var isToggled = await _userService.ToggleUserStatusAsync(id);
+        if (!isToggled) return NotFound(new { message = "Không tìm thấy người dùng" });
+        
+        return Ok(new { message = "Đã thay đổi trạng thái thành công" });
     }
 }

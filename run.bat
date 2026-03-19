@@ -1,6 +1,5 @@
 @echo off
 title Khoi chay ELearning API
-color 0A
 
 echo ==================================================
 echo       HE THONG LMS - KHOI CHAY BACKEND API

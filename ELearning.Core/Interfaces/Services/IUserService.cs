@@ -9,4 +9,5 @@ public interface IUserService
     Task<UserResponseDto> CreateUserAsync(CreateUserRequestDto request);
     Task<bool> UpdateUserAsync(Guid id, UpdateUserRequestDto request);
     Task<bool> DeleteUserAsync(Guid id);
+    Task<bool> ToggleUserStatusAsync(Guid id);
 }
