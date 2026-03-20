@@ -42,7 +42,7 @@ public class ChaptersController : ControllerBase
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateChapterRequestDto request)
     {
         var isUpdated = await _chapterService.UpdateChapterAsync(id, request);
-        if (!isUpdated) return NotFound();
+        if (!isUpdated) return NotFound(new { message = "Không tìm thấy chương" });
         return NoContent();
     }
 
@@ -50,7 +50,7 @@ public class ChaptersController : ControllerBase
     public async Task<IActionResult> Delete(Guid id)
     {
         var isDeleted = await _chapterService.DeleteChapterAsync(id);
-        if (!isDeleted) return NotFound();
+        if (!isDeleted) return NotFound(new { message = "Không tìm thấy chương" });
         return NoContent();
     }
 }

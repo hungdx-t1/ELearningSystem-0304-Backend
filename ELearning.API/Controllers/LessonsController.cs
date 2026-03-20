@@ -44,7 +44,7 @@ public class LessonsController : ControllerBase
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateLessonRequestDto request)
     {
         var isUpdated = await _lessonService.UpdateLessonAsync(id, request);
-        if (!isUpdated) return NotFound();
+        if (!isUpdated) return NotFound(new { message = "Không tìm thấy bài học" });
         return NoContent();
     }
 
@@ -52,7 +52,7 @@ public class LessonsController : ControllerBase
     public async Task<IActionResult> Delete(Guid id)
     {
         var isDeleted = await _lessonService.DeleteLessonAsync(id);
-        if (!isDeleted) return NotFound();
+        if (!isDeleted) return NotFound(new { message = "Không tìm thấy bài học" });
         return NoContent();
     }
 }
