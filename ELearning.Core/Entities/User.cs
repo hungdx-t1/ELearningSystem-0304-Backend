@@ -18,6 +18,6 @@ public class User
 
     // Navigation properties
     public ICollection<ClassEnrollment> ClassEnrollments { get; set; } = new List<ClassEnrollment>();
-    public ICollection<Course> InstructedCourses { get; set; } = new List<Course>();
+    public ICollection<Class> InstructedClasses { get; set; } = new List<Class>();
     public ICollection<Submission> Submissions { get; set; } = new List<Submission>();
 }
