@@ -31,4 +31,22 @@ public class ClassesController : ControllerBase
         if (!success) return BadRequest("Lỗi khi ghi danh sinh viên.");
         return Ok(new { message = "Ghi danh thành công!" });
     }
+
+    // PUT: api/classes/{id}
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateClassRequestDto request)
+    {
+        var isUpdated = await _classService.UpdateClassAsync(id, request);
+        if (!isUpdated) return NotFound(new { message = "Không tìm thấy lớp học để cập nhật" });
+        return NoContent(); // Code 204: Cập nhật thành công
+    }
+
+    // DELETE: api/classes/{id}
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id)
+    {
+        var isDeleted = await _classService.DeleteClassAsync(id);
+        if (!isDeleted) return NotFound(new { message = "Không tìm thấy lớp học để xóa" });
+        return NoContent(); // Code 204: Xóa thành công
+    }
 }

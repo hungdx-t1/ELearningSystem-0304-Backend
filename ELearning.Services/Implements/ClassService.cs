@@ -77,4 +77,31 @@ public class ClassService : IClassService
         await _enrollmentRepo.AddAsync(enrollment);
         return await _enrollmentRepo.SaveChangesAsync();
     }
+
+    public async Task<bool> UpdateClassAsync(Guid id, UpdateClassRequestDto request)
+    {
+        var existingClass = await _classRepo.GetByIdAsync(id);
+        if (existingClass == null) return false; // Không tìm thấy lớp
+
+        // Cập nhật các trường thông tin
+        existingClass.CourseId = request.CourseId;
+        existingClass.ClassCode = request.ClassCode;
+        existingClass.ClassName = request.ClassName;
+        existingClass.InstructorId = request.InstructorId;
+        existingClass.GoogleMeetLink = request.GoogleMeetLink;
+        existingClass.AcademicYear = request.AcademicYear;
+        existingClass.Description = request.Description;
+
+        _classRepo.Update(existingClass);
+        return await _classRepo.SaveChangesAsync();
+    }
+
+    public async Task<bool> DeleteClassAsync(Guid id)
+    {
+        var existingClass = await _classRepo.GetByIdAsync(id);
+        if (existingClass == null) return false;
+
+        _classRepo.Delete(existingClass);
+        return await _classRepo.SaveChangesAsync();
+    }
 }

@@ -21,6 +21,7 @@ public record CreateClassRequestDto(
     string? Description
 );
 public record UpdateClassRequestDto(
+    Guid CourseId,
     string ClassCode, 
     string ClassName, 
     Guid InstructorId,
