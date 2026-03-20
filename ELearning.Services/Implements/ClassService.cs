@@ -19,7 +19,18 @@ public class ClassService : IClassService
     public async Task<IEnumerable<ClassResponseDto>> GetAllClassesAsync()
     {
         var classes = await _classRepo.GetAllAsync();
-        return classes.Select(c => new ClassResponseDto(c.Id, c.ClassCode, c.ClassName, c.GoogleMeetLink, c.AcademicYear, c.Description));
+        
+        // Cập nhật DTO: Bơm thêm CourseId và InstructorId (Lưu ý: InstructorId giờ có thể null nếu GV bị xóa)
+        return classes.Select(c => new ClassResponseDto(
+            c.Id, 
+            c.CourseId, 
+            c.ClassCode, 
+            c.ClassName, 
+            c.InstructorId ?? Guid.Empty, // Tránh lỗi null nếu GV đã nghỉ việc
+            c.GoogleMeetLink, 
+            c.AcademicYear, 
+            c.Description
+        ));
     }
 
     public async Task<ClassResponseDto> CreateClassAsync(CreateClassRequestDto request)
@@ -27,15 +38,28 @@ public class ClassService : IClassService
         var newClass = new Class
         {
             Id = Guid.NewGuid(),
+            CourseId = request.CourseId,         // Hứng CourseId từ Angular
             ClassCode = request.ClassCode,
             ClassName = request.ClassName,
+            InstructorId = request.InstructorId, // Hứng Giảng viên được phân công từ Angular
             GoogleMeetLink = request.GoogleMeetLink,
             AcademicYear = request.AcademicYear,
             Description = request.Description
         };
+        
         await _classRepo.AddAsync(newClass);
         await _classRepo.SaveChangesAsync();
-        return new ClassResponseDto(newClass.Id, newClass.ClassCode, newClass.ClassName, newClass.GoogleMeetLink, newClass.AcademicYear, newClass.Description);
+        
+        return new ClassResponseDto(
+            newClass.Id, 
+            newClass.CourseId, 
+            newClass.ClassCode, 
+            newClass.ClassName, 
+            newClass.InstructorId ?? Guid.Empty, 
+            newClass.GoogleMeetLink, 
+            newClass.AcademicYear, 
+            newClass.Description
+        );
     }
 
     public async Task<bool> EnrollStudentAsync(Guid classId, Guid studentId)

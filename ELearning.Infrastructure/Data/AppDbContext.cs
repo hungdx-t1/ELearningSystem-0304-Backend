@@ -49,11 +49,11 @@ public class AppDbContext : DbContext
             .HasForeignKey(ce => ce.StudentId);
 
         // 4. Cấu hình các quan hệ (Relation) khác có hành vi Delete Behavior
-        modelBuilder.Entity<Course>()
-            .HasOne(c => c.Instructor)
-            .WithMany(u => u.InstructedCourses)
+        modelBuilder.Entity<Class>()
+            .HasOne(c => c.Instructor) 
+            .WithMany(u => u.InstructedClasses) // Trỏ về list Class bên bảng User
             .HasForeignKey(c => c.InstructorId)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.SetNull); // Nếu GV bị xóa, thì Lớp tạm thời trống GV (Set Null)
 
         modelBuilder.Entity<Submission>()
             .HasOne(s => s.Student)
