@@ -30,6 +30,7 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
 
+builder.Services.AddHttpClient(); // Cho phép dùng HttpClient
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 builder.Services.AddScoped<ICourseService, CourseService>();
 builder.Services.AddScoped<ILessonService, LessonService>();
@@ -42,8 +43,8 @@ builder.Services.AddScoped<ISubmissionService, SubmissionService>();
 builder.Services.AddScoped<IClassService, ClassService>();
 builder.Services.AddScoped<IAiChatService, AiChatService>();
 
-builder.Services.AddHttpClient(); // Cho phép dùng HttpClient
 builder.Services.AddScoped<IAiService, AiService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
 
 // Cấu hình Controllers và Swagger
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
