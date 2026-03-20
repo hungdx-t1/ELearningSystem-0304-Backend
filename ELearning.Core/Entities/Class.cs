@@ -9,6 +9,9 @@ public class Class
     // Foreign key to Course
     public Guid CourseId { get; set; }
     public Course? Course { get; set; }
+    
+    public Guid? InstructorId { get; set; }
+    public User? Instructor { get; set; }
 
     public string? GoogleMeetLink { get; set; }
     public string? AcademicYear { get; set; }

@@ -15,7 +15,7 @@ public record LessonResponseDto(
     int SortOrder
 );
 
-// 2. Dữ liệu Frontend gửi lên khi Giảng viên tạo bài học mới
+// 2. Dữ liệu Frontend gửi lên khi tác nhân tạo bài học mới
 public record CreateLessonRequestDto(
     Guid ChapterId, // Bắt buộc phải biết bài học này thuộc chương nào
     string Title,
