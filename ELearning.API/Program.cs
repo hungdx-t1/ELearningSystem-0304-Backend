@@ -44,7 +44,9 @@ builder.Services.AddScoped<IClassService, ClassService>();
 builder.Services.AddScoped<IAiChatService, AiChatService>();
 
 builder.Services.AddScoped<IAiService, AiService>();
+
 builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<IQuestionService, QuestionService>();
 
 // Cấu hình Controllers và Swagger
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

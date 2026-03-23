@@ -17,4 +17,6 @@ public class Lesson
     public int SortOrder { get; set; } = 0;
 
     public ICollection<Assignment> Assignments { get; set; } = new List<Assignment>();
+
+    public ICollection<Question> Questions { get; set; } = new List<Question>();
 }
