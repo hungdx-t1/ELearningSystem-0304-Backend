@@ -34,7 +34,7 @@ public class AiService : IAiService
 
         // 2. Gửi request sang Google
         var response = await _httpClient.PostAsync(url, jsonContent);
-        
+
         if (!response.IsSuccessStatusCode)
         {
             return "Xin lỗi, hiện tại não bộ AI của tôi đang bảo trì. Bạn vui lòng thử lại sau nhé!";
@@ -43,7 +43,7 @@ public class AiService : IAiService
         // 3. Đọc dữ liệu trả về và bóc lớp lấy đúng câu chữ
         var responseString = await response.Content.ReadAsStringAsync();
         using var jsonDocument = JsonDocument.Parse(responseString);
-        
+
         try
         {
             // Bóc tách JSON: candidates[0] -> content -> parts[0] -> text
@@ -59,6 +59,70 @@ public class AiService : IAiService
         catch
         {
             return "Lỗi khi giải mã phản hồi từ AI.";
+        }
+    }
+
+    public async Task<string> GenerateQuizAsync(string topic, int questionCount)
+    {
+        var apiKey = _config["GeminiAI:ApiKey"];
+        var url = $"{_config["GeminiAI:Url"]}?key={apiKey}";
+
+        // 1. Viết Prompt ép AI làm giáo viên và trả về đúng schema
+        string prompt = $@"
+            Bạn là một chuyên gia giáo dục. Hãy tạo {questionCount} câu hỏi trắc nghiệm về chủ đề '{topic}'.
+            BẮT BUỘC phải trả về đúng định dạng mảng JSON sau, KHÔNG kèm theo bất kỳ văn bản nào khác, KHÔNG dùng markdown ```json:
+            [
+              {{
+                ""content"": ""Nội dung câu hỏi"",
+                ""optionA"": ""Đáp án A"",
+                ""optionB"": ""Đáp án B"",
+                ""optionC"": ""Đáp án C"",
+                ""optionD"": ""Đáp án D"",
+                ""correctOption"": ""A"", // Chỉ ghi đúng 1 chữ cái A, B, C hoặc D
+                ""explanation"": ""Giải thích ngắn gọn lý do chọn đáp án này""
+              }}
+            ]
+        ";
+
+        // 2. Cấu hình generationConfig ép kiểu application/json
+        var requestBody = new
+        {
+            contents = new[]
+            {
+                new { parts = new[] { new { text = prompt } } }
+            },
+            generationConfig = new 
+            { 
+                response_mime_type = "application/json" 
+            }
+        };
+
+        var jsonContent = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
+
+        var response = await _httpClient.PostAsync(url, jsonContent);
+        
+        if (!response.IsSuccessStatusCode)
+        {
+            return "[]"; // Trả về mảng rỗng nếu gọi API thất bại
+        }
+
+        var responseString = await response.Content.ReadAsStringAsync();
+        using var jsonDocument = JsonDocument.Parse(responseString);
+        
+        try
+        {
+            var reply = jsonDocument.RootElement
+                .GetProperty("candidates")[0]
+                .GetProperty("content")
+                .GetProperty("parts")[0]
+                .GetProperty("text")
+                .GetString();
+
+            return reply ?? "[]";
+        }
+        catch
+        {
+            return "[]";
         }
     }
 }
