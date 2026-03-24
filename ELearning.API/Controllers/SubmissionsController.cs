@@ -45,4 +45,11 @@ public class SubmissionsController : ControllerBase
         if (!isGraded) return NotFound("Không tìm thấy bài nộp.");
         return NoContent();
     }
+
+    [HttpPost("submit-quiz")]
+    public async Task<IActionResult> SubmitQuiz([FromBody] SubmitQuizRequestDto request)
+    {
+        var result = await _submissionService.SubmitQuizAsync(request);
+        return Ok(result);
+    }
 }

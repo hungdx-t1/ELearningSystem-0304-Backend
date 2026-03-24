@@ -26,3 +26,11 @@ public record GradeSubmissionRequestDto(
     float Score, 
     string? Feedback
 );
+
+// Dành cho Sinh viên nộp bài Trắc nghiệm (Chỉ cần gửi Điểm)
+public record SubmitQuizRequestDto(
+    Guid LessonId, 
+    Guid ClassId, 
+    Guid StudentId, 
+    float Score
+);

@@ -79,4 +79,37 @@ public class SubmissionService : ISubmissionService
         _submissionRepo.Update(sub);
         return await _submissionRepo.SaveChangesAsync();
     }
+
+    public async Task<SubmissionResponseDto> SubmitQuizAsync(SubmitQuizRequestDto request)
+    {
+        // Kiểm tra xem đã làm bài chưa (Nếu làm rồi thì cập nhật điểm mới - Tùy quy định trường bạn cho làm lại hay không)
+        var existingSubs = await _submissionRepo.FindAsync(s => s.ClassId == request.ClassId && s.LessonId == request.LessonId && s.StudentId == request.StudentId);
+        var existingSub = existingSubs.FirstOrDefault();
+
+        if (existingSub != null)
+        {
+            existingSub.Score = request.Score;
+            existingSub.SubmittedAt = DateTime.UtcNow;
+            
+            _submissionRepo.Update(existingSub);
+            await _submissionRepo.SaveChangesAsync();
+            return new SubmissionResponseDto(existingSub.Id, existingSub.LessonId, existingSub.ClassId, existingSub.StudentId, existingSub.SubmissionUrl, existingSub.StudentNote, existingSub.SubmittedAt, existingSub.Score, existingSub.Feedback);
+        }
+
+        // Chưa làm thì tạo record mới
+        var newSub = new Submission
+        {
+            Id = Guid.NewGuid(),
+            LessonId = request.LessonId,
+            ClassId = request.ClassId,
+            StudentId = request.StudentId,
+            Score = request.Score,
+            SubmittedAt = DateTime.UtcNow
+        };
+        
+        await _submissionRepo.AddAsync(newSub);
+        await _submissionRepo.SaveChangesAsync();
+
+        return new SubmissionResponseDto(newSub.Id, newSub.LessonId, newSub.ClassId, newSub.StudentId, newSub.SubmissionUrl, newSub.StudentNote, newSub.SubmittedAt, newSub.Score, newSub.Feedback);
+    }
 }
