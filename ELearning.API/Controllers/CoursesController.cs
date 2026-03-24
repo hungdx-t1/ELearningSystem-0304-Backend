@@ -57,4 +57,15 @@ public class CoursesController : ControllerBase
         if (!isDeleted) return NotFound(new { message = "Không tìm thấy khóa học để xóa" });
         return NoContent();
     }
+
+    [HttpGet("{id:guid}/assignments")]
+    public async Task<IActionResult> GetAssignmentsByCourse(Guid id)
+    {
+        var assignments = await _courseService.GetAssignmentsByCourseAsync(id);
+        
+        if (assignments == null || !assignments.Any()) 
+            return NotFound(new { message = "Khóa học này chưa có bài tập tự luận nào." });
+            
+        return Ok(assignments);
+    }
 }

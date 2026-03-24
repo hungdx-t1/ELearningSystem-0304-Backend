@@ -1,17 +1,22 @@
 using ELearning.Core.DTOs.Course;
 using ELearning.Core.Entities;
+using ELearning.Core.Enums;
 using ELearning.Core.Interfaces;
 using ELearning.Core.Interfaces.Services;
+using ELearning.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace ELearning.Services.Implements;
 
 public class CourseService : ICourseService
 {
+    private readonly AppDbContext _context;
     private readonly IGenericRepository<Course> _courseRepository;
 
-    public CourseService(IGenericRepository<Course> courseRepository)
+    public CourseService(IGenericRepository<Course> courseRepository, AppDbContext context)
     {
         _courseRepository = courseRepository;
+        _context = context;
     }
 
     public async Task<IEnumerable<CourseResponseDto>> GetAllCoursesAsync()
@@ -65,5 +70,20 @@ public class CourseService : ICourseService
 
         _courseRepository.Delete(course);
         return await _courseRepository.SaveChangesAsync();
+    }
+
+    public async Task<IEnumerable<AssignmentDto>> GetAssignmentsByCourseAsync(Guid courseId)
+    {
+        var assignments = await _context.Lessons
+            .Include(l => l.Chapter)
+            .Where(l => l.Chapter.CourseId == courseId && l.Type == LessonType.Assignment)
+            .Select(l => new AssignmentDto(
+                l.Id, 
+                l.Title, 
+                l.Chapter.Title
+            ))
+            .ToListAsync();
+
+        return assignments;
     }
 }

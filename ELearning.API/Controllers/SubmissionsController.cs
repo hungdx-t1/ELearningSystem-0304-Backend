@@ -22,7 +22,7 @@ public class SubmissionsController : ControllerBase
         return Ok(await _submissionService.GetSubmissionsAsync(classId, lessonId));
     }
 
-    // Thêm 1 API nhỏ để Sinh viên lấy lại bài nộp của chính mình
+    // API Sinh viên lấy lại bài nộp của chính mình
     [HttpGet("class/{classId:guid}/lesson/{lessonId:guid}/student/{studentId:guid}")]
     public async Task<IActionResult> GetStudentSubmission(Guid classId, Guid lessonId, Guid studentId)
     {
