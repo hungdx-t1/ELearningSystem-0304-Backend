@@ -15,10 +15,20 @@ public class SubmissionsController : ControllerBase
         _submissionService = submissionService;
     }
 
-    [HttpGet("assignment/{assignmentId:guid}")]
-    public async Task<IActionResult> GetByAssignment(Guid assignmentId)
+    // Đổi route để nhận cả ClassId và LessonId (Ví dụ: GET /api/submissions/class/123/lesson/456)
+    [HttpGet("class/{classId:guid}/lesson/{lessonId:guid}")]
+    public async Task<IActionResult> GetSubmissions(Guid classId, Guid lessonId)
     {
-        return Ok(await _submissionService.GetSubmissionsByAssignmentIdAsync(assignmentId));
+        return Ok(await _submissionService.GetSubmissionsAsync(classId, lessonId));
+    }
+
+    // Thêm 1 API nhỏ để Sinh viên lấy lại bài nộp của chính mình
+    [HttpGet("class/{classId:guid}/lesson/{lessonId:guid}/student/{studentId:guid}")]
+    public async Task<IActionResult> GetStudentSubmission(Guid classId, Guid lessonId, Guid studentId)
+    {
+        var submission = await _submissionService.GetSubmissionAsync(classId, lessonId, studentId);
+        if (submission == null) return NotFound("Chưa nộp bài.");
+        return Ok(submission);
     }
 
     [HttpPost("submit")]

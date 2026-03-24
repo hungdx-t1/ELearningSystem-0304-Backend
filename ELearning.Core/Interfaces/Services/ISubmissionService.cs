@@ -4,8 +4,12 @@ namespace ELearning.Core.Interfaces.Services;
 
 public interface ISubmissionService
 {
-    Task<IEnumerable<SubmissionResponseDto>> GetSubmissionsByAssignmentIdAsync(Guid assignmentId);
-    Task<SubmissionResponseDto?> GetSubmissionAsync(Guid assignmentId, Guid studentId);
+    // Lấy toàn bộ bài nộp của 1 Bài tập (Lesson) trong 1 Lớp học (Class) cụ thể
+    Task<IEnumerable<SubmissionResponseDto>> GetSubmissionsAsync(Guid classId, Guid lessonId);
+    
+    // Lấy bài nộp của 1 Sinh viên cụ thể (để sinh viên tự xem lại bài của mình)
+    Task<SubmissionResponseDto?> GetSubmissionAsync(Guid classId, Guid lessonId, Guid studentId);
+    
     Task<SubmissionResponseDto> SubmitWorkAsync(CreateSubmissionRequestDto request);
     Task<bool> GradeSubmissionAsync(Guid id, GradeSubmissionRequestDto request);
 }
