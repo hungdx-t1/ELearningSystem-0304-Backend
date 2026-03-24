@@ -91,6 +91,29 @@ public class ClassesController : ControllerBase
         });
     }
 
+    // Lấy danh sách Lớp học mà một Sinh viên đang tham gia
+    [HttpGet("student/{studentId:guid}")]
+    public async Task<IActionResult> GetClassesByStudent(Guid studentId, [FromServices] AppDbContext context)
+    {
+        var classes = await context.ClassEnrollments
+            .Include(e => e.Class)
+            .ThenInclude(c => c.Course) // Kéo theo thông tin Khóa học (Môn học)
+            .Where(e => e.StudentId == studentId)
+            .Select(e => new 
+            {
+                Id = e.Class.Id,
+                CourseId = e.Class.CourseId,
+                ClassCode = e.Class.ClassCode,
+                ClassName = e.Class.ClassName,
+                CourseName = e.Class.Course != null ? e.Class.Course.Title : "Chưa rõ môn",
+                Schedule = e.Class.AcademicYear,
+                GoogleMeetLink = e.Class.GoogleMeetLink
+            })
+            .ToListAsync();
+
+        return Ok(classes);
+    }
+
     // API IMPORT EXCEL CHO LỚP HỌC
     [HttpPost("{id:guid}/import-students")]
     public async Task<IActionResult> ImportStudentsToClass(Guid id, IFormFile file)
