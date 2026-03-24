@@ -9,9 +9,10 @@ public enum UserRole
 
 public enum LessonType
 {
-    Video,
-    Document,
-    Quiz
+    Video = 0,
+    Document = 1,
+    Quiz = 2,
+    Assignment = 3
 }
 
 public enum VideoProvider
