@@ -11,5 +11,5 @@ public class Assignment
     public DateTime? DueDate { get; set; }
     public float MaxScore { get; set; } = 10.0f;
 
-    public ICollection<Submission> Submissions { get; set; } = new List<Submission>();
+    // public ICollection<Submission> Submissions { get; set; } = new List<Submission>();
 }
