@@ -22,9 +22,21 @@ public class AiService : IAiService
         var apiKey = _config["GeminiAI:ApiKey"];
         var url = $"{_config["GeminiAI:Url"]}?key={apiKey}";
 
-        // 1. Đóng gói dữ liệu theo chuẩn cấu trúc của Google Gemini
+        // 1. Đóng gói dữ liệu kèm theo SYSTEM INSTRUCTION (Chỉ thị hệ thống)
         var requestBody = new
         {
+            // Cài đặt "Nhân vật" và "Giới hạn" cho AI ở đây
+            system_instruction = new
+            {
+                parts = new[]
+                {
+                    new 
+                    { 
+                        text = "Bạn là một trợ lý ảo giáo dục tận tâm trên hệ thống quản lý học tập (LMS). Nhiệm vụ DUY NHẤT của bạn là giải đáp các thắc mắc liên quan đến kiến thức, môn học, lập trình, và hướng dẫn học tập. Nếu sinh viên hỏi bất kỳ chủ đề nào KHÔNG liên quan đến giáo dục và học thuật (ví dụ: thời tiết, game, phim ảnh, chính trị, thể thao, hay trò chuyện phiếm), bạn PHẢI TỪ CHỐI một cách lịch sự, ngắn gọn và nhắc nhở sinh viên quay lại chủ đề học tập." 
+                    }
+                }
+            },
+            // Câu hỏi thực tế của Sinh viên
             contents = new[]
             {
                 new { parts = new[] { new { text = userMessage } } }
