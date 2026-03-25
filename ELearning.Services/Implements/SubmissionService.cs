@@ -3,15 +3,19 @@ using ELearning.Core.Interfaces;
 using ELearning.Core.Interfaces.Services;
 using ELearning.Core.DTOs.Submission;
 using ClosedXML.Excel;
+using ELearning.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace ELearning.Services.Implements;
 
 public class SubmissionService : ISubmissionService
 {
+    private readonly AppDbContext _context;
     private readonly IGenericRepository<Submission> _submissionRepo;
 
-    public SubmissionService(IGenericRepository<Submission> submissionRepo)
+    public SubmissionService(AppDbContext context, IGenericRepository<Submission> submissionRepo)
     {
+        _context = context;
         _submissionRepo = submissionRepo;
     }
 
@@ -116,43 +120,65 @@ public class SubmissionService : ISubmissionService
 
     public async Task<byte[]> ExportScoresToExcelAsync(Guid lessonId)
     {
-        // 1. Kéo dữ liệu bài nộp từ DB (Có thể Join với bảng User để lấy Tên nếu bạn đã setup khoá ngoại)
-        var submissions = await _submissionRepo.FindAsync(s => s.LessonId == lessonId);
-        var submissionList = submissions.ToList();
+        // (join) nối bảng Submissions và Users qua cột StudentId
+        var query = from s in _context.Submissions
+                    join u in _context.Users on s.StudentId equals u.Id
+                    where s.LessonId == lessonId
+                    orderby s.SubmittedAt // Sắp xếp theo thời gian nộp
+                    select new 
+                    {
+                        s.Score,
+                        s.SubmittedAt,
+                        s.Feedback,
+                        StudentName = u.FullName ?? "Chưa cập nhật tên",
+                        StudentCode = u.UserCode ?? u.Email ?? "Không rõ mã SV"
+                    };
 
-        // 2. Khởi tạo file Excel trong bộ nhớ
+        var submissionList = await query.ToListAsync();
+
+        // Khởi tạo file Excel
         using var workbook = new XLWorkbook();
         var worksheet = workbook.Worksheets.Add("Bảng Điểm");
 
-        // 3. Đổ Header (Tiêu đề cột) và trang trí cho đẹp
-        var headers = new[] { "STT", "Mã Sinh Viên (ID)", "Điểm Số", "Thời Gian Nộp", "Trạng Thái", "Nhận Xét" };
+        // Header + trang trí (Cập nhật lại tiêu đề cột cho chuẩn)
+        var headers = new[] { "STT", "Họ và Tên", "Mã Sinh Viên", "Điểm Số", "Thời Gian Nộp", "Trạng Thái", "Nhận Xét" };
         for (int i = 0; i < headers.Length; i++)
         {
             var cell = worksheet.Cell(1, i + 1);
             cell.Value = headers[i];
             cell.Style.Font.Bold = true;
-            cell.Style.Fill.BackgroundColor = XLColor.LightBlue;
+            cell.Style.Font.FontColor = XLColor.White;
+            cell.Style.Fill.BackgroundColor = XLColor.Teal; // Đổi màu Header
             cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
         }
 
-        // 4. Đổ dữ liệu vào từng dòng
+        // Đổ dữ liệu đã được Join vào từng dòng
         for (int i = 0; i < submissionList.Count; i++)
         {
             var sub = submissionList[i];
             int row = i + 2;
 
             worksheet.Cell(row, 1).Value = i + 1;
-            worksheet.Cell(row, 2).Value = sub.StudentId.ToString(); 
-            worksheet.Cell(row, 3).Value = sub.Score.HasValue ? sub.Score.Value.ToString() : "Chưa chấm";
-            worksheet.Cell(row, 4).Value = sub.SubmittedAt.ToString("dd/MM/yyyy HH:mm");
-            worksheet.Cell(row, 5).Value = sub.Score.HasValue ? "Đã chấm" : "Chờ chấm";
-            worksheet.Cell(row, 6).Value = sub.Feedback ?? "";
+            worksheet.Cell(row, 2).Value = sub.StudentName;
+            worksheet.Cell(row, 3).Value = sub.StudentCode; 
+            worksheet.Cell(row, 4).Value = sub.Score.HasValue ? sub.Score.Value.ToString() : "Chưa chấm";
+            worksheet.Cell(row, 5).Value = sub.SubmittedAt.ToString("dd/MM/yyyy HH:mm");
+            worksheet.Cell(row, 6).Value = sub.Score.HasValue ? "Đã chấm" : "Chờ chấm";
+            
+            // Tô màu nhẹ cho cột Trạng thái để Giảng viên dễ nhìn
+            if (sub.Score.HasValue) {
+                worksheet.Cell(row, 6).Style.Font.FontColor = XLColor.Green;
+            } else {
+                worksheet.Cell(row, 6).Style.Font.FontColor = XLColor.Orange;
+            }
+
+            worksheet.Cell(row, 7).Value = sub.Feedback ?? "";
         }
 
-        // Tự động căn chỉnh độ rộng cột cho vừa nội dung
+        // Tự động căn chỉnh độ rộng cột cho vừa nội dung chữ
         worksheet.Columns().AdjustToContents();
 
-        // 5. Chuyển file Excel thành mảng Byte để gửi qua mạng
+        // 5. Chuyển file Excel thành mảng Byte
         using var stream = new MemoryStream();
         workbook.SaveAs(stream);
         return stream.ToArray();
