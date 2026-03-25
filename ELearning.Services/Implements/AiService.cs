@@ -1,4 +1,5 @@
 using ELearning.Core.Interfaces.Services;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using System.Text;
 using System.Text.Json;
@@ -124,5 +125,76 @@ public class AiService : IAiService
         {
             return "[]";
         }
+    }
+
+    public async Task<string> GenerateQuizFromFileAsync(IFormFile file, string topic, int questionCount)
+    {
+        var apiKey = _config["GeminiAI:ApiKey"];
+        var url = $"{_config["GeminiAI:Url"]}?key={apiKey}";
+
+        // 1. Chuyển file thành mảng Byte rồi ép sang Base64
+        using var memoryStream = new MemoryStream();
+        await file.CopyToAsync(memoryStream);
+        var base64File = Convert.ToBase64String(memoryStream.ToArray());
+        var mimeType = file.ContentType; // Ví dụ: application/pdf
+
+        // 2. Viết Prompt yêu cầu AI đọc tài liệu đính kèm
+        string topicInstruction = string.IsNullOrWhiteSpace(topic) 
+            ? "toàn bộ nội dung tài liệu đính kèm" 
+            : $"chủ đề '{topic}' dựa trên tài liệu đính kèm";
+
+        string prompt = $@"
+            Bạn là một chuyên gia giáo dục. Hãy ĐỌC KỸ TÀI LIỆU ĐÍNH KÈM và tạo {questionCount} câu hỏi trắc nghiệm tập trung vào {topicInstruction}.
+            BẮT BUỘC phải trả về đúng định dạng mảng JSON sau, KHÔNG kèm theo bất kỳ văn bản nào khác:
+            [
+              {{
+                ""content"": ""Nội dung câu hỏi"",
+                ""optionA"": ""Đáp án A"",
+                ""optionB"": ""Đáp án B"",
+                ""optionC"": ""Đáp án C"",
+                ""optionD"": ""Đáp án D"",
+                ""correctOption"": ""A"", 
+                ""explanation"": ""Giải thích ngắn gọn lý do""
+              }}
+            ]
+        ";
+
+        // 3. Đóng gói dữ liệu Đa phương thức (Text + File)
+        var requestBody = new
+        {
+            contents = new[]
+            {
+                new 
+                { 
+                    parts = new object[] 
+                    { 
+                        new { text = prompt },
+                        new 
+                        { 
+                            inline_data = new 
+                            {
+                                mime_type = mimeType,
+                                data = base64File
+                            }
+                        }
+                    } 
+                }
+            },
+            generationConfig = new { response_mime_type = "application/json" }
+        };
+
+        var jsonContent = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
+        var response = await _httpClient.PostAsync(url, jsonContent);
+        
+        if (!response.IsSuccessStatusCode) return "[]";
+
+        var responseString = await response.Content.ReadAsStringAsync();
+        using var jsonDocument = JsonDocument.Parse(responseString);
+        
+        try
+        {
+            return jsonDocument.RootElement.GetProperty("candidates")[0].GetProperty("content").GetProperty("parts")[0].GetProperty("text").GetString() ?? "[]";
+        }
+        catch { return "[]"; }
     }
 }

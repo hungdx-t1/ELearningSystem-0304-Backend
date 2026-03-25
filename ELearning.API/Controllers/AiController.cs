@@ -52,4 +52,29 @@ public class AiController : ControllerBase
             return StatusCode(500, new { message = "Lỗi khi xử lý dữ liệu từ AI." });
         }
     }
+
+    [HttpPost("generate-quiz-from-file")]
+    public async Task<IActionResult> GenerateQuizFromFile([FromForm] IFormFile file, [FromForm] string? topic, [FromForm] int questionCount)
+    {
+        if (file == null || file.Length == 0)
+            return BadRequest(new { message = "Vui lòng đính kèm tài liệu." });
+
+        if (questionCount <= 0 || questionCount > 20)
+            return BadRequest(new { message = "Số lượng câu hỏi phải từ 1 đến 20." });
+
+        // Nếu topic bị null thì cho thành chuỗi rỗng
+        var safeTopic = topic ?? "";
+
+        var jsonResult = await _aiService.GenerateQuizFromFileAsync(file, safeTopic, questionCount);
+        
+        try 
+        {
+            var jsonElement = System.Text.Json.JsonSerializer.Deserialize<object>(jsonResult);
+            return Ok(jsonElement);
+        } 
+        catch 
+        {
+            return StatusCode(500, new { message = "Lỗi khi xử lý dữ liệu từ AI." });
+        }
+    }
 }
