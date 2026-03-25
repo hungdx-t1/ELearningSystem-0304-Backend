@@ -2,6 +2,7 @@ using ELearning.Core.Entities;
 using ELearning.Core.Interfaces;
 using ELearning.Core.Interfaces.Services;
 using ELearning.Core.DTOs.Submission;
+using ClosedXML.Excel;
 
 namespace ELearning.Services.Implements;
 
@@ -111,5 +112,49 @@ public class SubmissionService : ISubmissionService
         await _submissionRepo.SaveChangesAsync();
 
         return new SubmissionResponseDto(newSub.Id, newSub.LessonId, newSub.ClassId, newSub.StudentId, newSub.SubmissionUrl, newSub.StudentNote, newSub.SubmittedAt, newSub.Score, newSub.Feedback);
+    }
+
+    public async Task<byte[]> ExportScoresToExcelAsync(Guid lessonId)
+    {
+        // 1. Kéo dữ liệu bài nộp từ DB (Có thể Join với bảng User để lấy Tên nếu bạn đã setup khoá ngoại)
+        var submissions = await _submissionRepo.FindAsync(s => s.LessonId == lessonId);
+        var submissionList = submissions.ToList();
+
+        // 2. Khởi tạo file Excel trong bộ nhớ
+        using var workbook = new XLWorkbook();
+        var worksheet = workbook.Worksheets.Add("Bảng Điểm");
+
+        // 3. Đổ Header (Tiêu đề cột) và trang trí cho đẹp
+        var headers = new[] { "STT", "Mã Sinh Viên (ID)", "Điểm Số", "Thời Gian Nộp", "Trạng Thái", "Nhận Xét" };
+        for (int i = 0; i < headers.Length; i++)
+        {
+            var cell = worksheet.Cell(1, i + 1);
+            cell.Value = headers[i];
+            cell.Style.Font.Bold = true;
+            cell.Style.Fill.BackgroundColor = XLColor.LightBlue;
+            cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+        }
+
+        // 4. Đổ dữ liệu vào từng dòng
+        for (int i = 0; i < submissionList.Count; i++)
+        {
+            var sub = submissionList[i];
+            int row = i + 2;
+
+            worksheet.Cell(row, 1).Value = i + 1;
+            worksheet.Cell(row, 2).Value = sub.StudentId.ToString(); 
+            worksheet.Cell(row, 3).Value = sub.Score.HasValue ? sub.Score.Value.ToString() : "Chưa chấm";
+            worksheet.Cell(row, 4).Value = sub.SubmittedAt.ToString("dd/MM/yyyy HH:mm");
+            worksheet.Cell(row, 5).Value = sub.Score.HasValue ? "Đã chấm" : "Chờ chấm";
+            worksheet.Cell(row, 6).Value = sub.Feedback ?? "";
+        }
+
+        // Tự động căn chỉnh độ rộng cột cho vừa nội dung
+        worksheet.Columns().AdjustToContents();
+
+        // 5. Chuyển file Excel thành mảng Byte để gửi qua mạng
+        using var stream = new MemoryStream();
+        workbook.SaveAs(stream);
+        return stream.ToArray();
     }
 }

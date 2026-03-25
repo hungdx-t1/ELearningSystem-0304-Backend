@@ -52,4 +52,11 @@ public class SubmissionsController : ControllerBase
         var result = await _submissionService.SubmitQuizAsync(request);
         return Ok(result);
     }
+
+    [HttpGet("lesson/{lessonId:guid}/export")]
+    public async Task<IActionResult> ExportScores(Guid lessonId)
+    {
+        var fileBytes = await _submissionService.ExportScoresToExcelAsync(lessonId);
+        return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Bang_Diem.xlsx");
+    }
 }
