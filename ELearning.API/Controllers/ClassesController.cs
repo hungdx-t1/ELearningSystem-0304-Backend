@@ -1,6 +1,7 @@
 using ELearning.Core.DTOs.Class;
 using ELearning.Core.Interfaces.Services;
 using ELearning.Infrastructure.Data;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OfficeOpenXml;
@@ -9,6 +10,7 @@ namespace ELearning.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class ClassesController : ControllerBase
 {
     private readonly AppDbContext _context;
@@ -61,9 +63,27 @@ public class ClassesController : ControllerBase
     {
         var classEntity = await context.Classes
             .Include(c => c.Course)
+            .Include(c => c.Enrollments)
             .FirstOrDefaultAsync(c => c.Id == id);
 
         if (classEntity == null) return NotFound("Không tìm thấy lớp học");
+
+        var currentUserIdStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        var currentUserRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+
+        if (Guid.TryParse(currentUserIdStr, out Guid currentUserId))
+        {
+            // Nếu là Giảng viên -> Phải là người được phân công dạy lớp này
+            if (currentUserRole == "Instructor" && classEntity.InstructorId != currentUserId)
+            {
+                return Forbid(); // Trả về lỗi 403
+            }
+            // Nếu là Sinh viên -> Phải nằm trong danh sách Enrollments của lớp này
+            if (currentUserRole == "Student" && !classEntity.Enrollments.Any(e => e.StudentId == currentUserId))
+            {
+                return Forbid(); // Trả về lỗi 403
+            }
+        }
 
         // Lấy danh sách SV đã ghi danh
         var students = await context.ClassEnrollments

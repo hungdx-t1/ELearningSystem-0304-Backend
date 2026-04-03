@@ -2,6 +2,7 @@ using ELearning.Core.DTOs.Lesson;
 using ELearning.Core.Enums;
 using ELearning.Core.Interfaces.Services;
 using ELearning.Infrastructure.Data;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,6 +10,7 @@ namespace ELearning.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class LessonsController : ControllerBase
 {
     private readonly ILessonService _lessonService;

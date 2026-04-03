@@ -6,7 +6,7 @@ namespace ELearning.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-// [Authorize] //TODO tạm thời bỏ auth để test, khi nào ghép frontend thì bật lại
+[Authorize]
 public class FilesController : ControllerBase
 {
     private readonly ICloudinaryService _cloudinaryService;

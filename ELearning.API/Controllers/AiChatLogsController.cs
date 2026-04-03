@@ -1,11 +1,13 @@
 using ELearning.Core.DTOs.AiChat;
 using ELearning.Core.Interfaces.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ELearning.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class AiChatLogsController : ControllerBase
 {
     private readonly IAiChatService _aiChatService;

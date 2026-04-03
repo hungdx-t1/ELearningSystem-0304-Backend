@@ -1,5 +1,6 @@
 using ELearning.Core.DTOs.User;
 using ELearning.Core.Interfaces.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ELearning.API.Controllers;
@@ -7,6 +8,7 @@ namespace ELearning.API.Controllers;
 [ApiController]
 // [Route("api/[controller]")]
 [Route("api/admin/users")]
+[Authorize(Roles = "Admin")] // Chỉ Admin mới có quyền quản lý người dùng
 public class UsersController : ControllerBase
 {
     private readonly IUserService _userService;

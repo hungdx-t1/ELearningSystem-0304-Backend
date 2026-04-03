@@ -1,11 +1,15 @@
 using ELearning.Core.DTOs.Course;
 using ELearning.Core.Interfaces.Services;
+using ELearning.Infrastructure.Data;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace ELearning.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class CoursesController : ControllerBase
 {
     private readonly ICourseService _courseService;
@@ -25,10 +29,25 @@ public class CoursesController : ControllerBase
 
     // GET: api/courses/{id}
     [HttpGet("{id:guid}")]
-    public async Task<ActionResult<CourseResponseDto>> GetById(Guid id)
+    public async Task<ActionResult<CourseResponseDto>> GetById(Guid id, [FromServices] AppDbContext context)
     {
         var course = await _courseService.GetCourseByIdAsync(id);
         if (course == null) return NotFound(new { message = "Không tìm thấy khóa học" });
+
+        var currentUserIdStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        var currentUserRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+
+        // Nếu là Học viên, kiểm tra xem có đang học lớp nào thuộc môn này không    
+        if (currentUserRole == "Student" && Guid.TryParse(currentUserIdStr, out Guid currentUserId))
+        {
+            var isEnrolledInCourse = await context.ClassEnrollments
+                .AnyAsync(e => e.StudentId == currentUserId && e.Class.CourseId == id);
+            
+            if (!isEnrolledInCourse)
+            {
+                return Forbid(); // Trả về 403 nếu chưa ghi danh
+            }
+        }
         return Ok(course);
     }
 

@@ -1,6 +1,7 @@
 using ELearning.Core.DTOs.User;
 using ELearning.Core.Enums;
 using ELearning.Core.Interfaces.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OfficeOpenXml; // EPPlus
 
@@ -8,6 +9,7 @@ namespace ELearning.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(Roles = "Admin")]
 public class AdminController : ControllerBase
 {
     private readonly IUserService _userService;

@@ -1,11 +1,12 @@
 using ELearning.Core.Interfaces.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ELearning.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-// [Authorize] // tạm thời comment để dễ test, sau này sẽ thêm lại
+[Authorize]
 public class AiController : ControllerBase
 {
     private readonly IAiService _aiService;
