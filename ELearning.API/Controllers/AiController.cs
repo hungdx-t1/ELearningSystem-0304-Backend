@@ -22,14 +22,13 @@ public class AiController : ControllerBase
     public record ChatRequest(string Prompt);
 
     [HttpPost("chat")]
-    public async Task<IActionResult> Chat([FromBody] ChatRequest request)
+    public async Task<IActionResult> Chat([FromForm] string prompt, [FromForm] IFormFile? file)
     {
-        if (string.IsNullOrWhiteSpace(request.Prompt))
+        if (string.IsNullOrWhiteSpace(prompt))
             return BadRequest(new { message = "Câu hỏi không được để trống" });
 
-        var reply = await _aiService.ChatWithAiAsync(request.Prompt);
+        var reply = await _aiService.ChatWithAiAsync(prompt, file);
         
-        // Trả về theo định dạng { reply: "..." } để khớp với Frontend
         return Ok(new { reply = reply });
     }
 

@@ -17,15 +17,95 @@ public class AiService : IAiService
         _config = config;
     }
 
-    public async Task<string> ChatWithAiAsync(string userMessage)
+    // public async Task<string> ChatWithAiAsync(string userMessage)
+    // {
+    //     var apiKey = _config["GeminiAI:ApiKey"];
+    //     var url = $"{_config["GeminiAI:Url"]}?key={apiKey}";
+
+    //     // 1. Đóng gói dữ liệu kèm theo SYSTEM INSTRUCTION (Chỉ thị hệ thống)
+    //     var requestBody = new
+    //     {
+    //         // Cài đặt "Nhân vật" và "Giới hạn" cho AI ở đây
+    //         system_instruction = new
+    //         {
+    //             parts = new[]
+    //             {
+    //                 new 
+    //                 { 
+    //                     text = "Bạn là một trợ lý ảo giáo dục tận tâm trên hệ thống quản lý học tập (LMS). Nhiệm vụ DUY NHẤT của bạn là giải đáp các thắc mắc liên quan đến kiến thức, môn học, lập trình, và hướng dẫn học tập. Nếu sinh viên hỏi bất kỳ chủ đề nào KHÔNG liên quan đến giáo dục và học thuật (ví dụ: thời tiết, game, phim ảnh, chính trị, thể thao, hay trò chuyện phiếm), bạn PHẢI TỪ CHỐI một cách lịch sự, ngắn gọn và nhắc nhở sinh viên quay lại chủ đề học tập." 
+    //                 }
+    //             }
+    //         },
+    //         // Câu hỏi thực tế của Sinh viên
+    //         contents = new[]
+    //         {
+    //             new { parts = new[] { new { text = userMessage } } }
+    //         }
+    //     };
+
+    //     var jsonContent = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
+
+    //     // 2. Gửi request sang Google
+    //     var response = await _httpClient.PostAsync(url, jsonContent);
+
+    //     if (!response.IsSuccessStatusCode)
+    //     {
+    //         return "Xin lỗi, hiện tại não bộ AI của tôi đang bảo trì. Bạn vui lòng thử lại sau nhé!";
+    //     }
+
+    //     // 3. Đọc dữ liệu trả về và bóc lớp lấy đúng câu chữ
+    //     var responseString = await response.Content.ReadAsStringAsync();
+    //     using var jsonDocument = JsonDocument.Parse(responseString);
+
+    //     try
+    //     {
+    //         // Bóc tách JSON: candidates[0] -> content -> parts[0] -> text
+    //         var reply = jsonDocument.RootElement
+    //             .GetProperty("candidates")[0]
+    //             .GetProperty("content")
+    //             .GetProperty("parts")[0]
+    //             .GetProperty("text")
+    //             .GetString();
+
+    //         return reply ?? "Mình không hiểu ý bạn lắm.";
+    //     }
+    //     catch
+    //     {
+    //         return "Lỗi khi giải mã phản hồi từ AI.";
+    //     }
+    // }
+
+    public async Task<string> ChatWithAiAsync(string userMessage, IFormFile? file = null)
     {
         var apiKey = _config["GeminiAI:ApiKey"];
         var url = $"{_config["GeminiAI:Url"]}?key={apiKey}";
 
-        // 1. Đóng gói dữ liệu kèm theo SYSTEM INSTRUCTION (Chỉ thị hệ thống)
+        // 1. Khởi tạo danh sách các thành phần (parts) của câu hỏi
+        var parts = new List<object> 
+        { 
+            new { text = userMessage } 
+        };
+
+        // 2. NẾU CÓ FILE ĐÍNH KÈM -> Chuyển thành Base64 và nhét thêm vào danh sách parts
+        if (file != null && file.Length > 0)
+        {
+            using var memoryStream = new MemoryStream();
+            await file.CopyToAsync(memoryStream);
+            var base64File = Convert.ToBase64String(memoryStream.ToArray());
+
+            parts.Add(new
+            {
+                inline_data = new
+                {
+                    mime_type = file.ContentType,
+                    data = base64File
+                }
+            });
+        }
+
+        // 3. Đóng gói dữ liệu kèm theo SYSTEM INSTRUCTION
         var requestBody = new
         {
-            // Cài đặt "Nhân vật" và "Giới hạn" cho AI ở đây
             system_instruction = new
             {
                 parts = new[]
@@ -36,30 +116,23 @@ public class AiService : IAiService
                     }
                 }
             },
-            // Câu hỏi thực tế của Sinh viên
             contents = new[]
             {
-                new { parts = new[] { new { text = userMessage } } }
+                new { parts = parts.ToArray() } // Truyền danh sách parts (có thể có hoặc không có file) vào đây
             }
         };
 
         var jsonContent = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
-
-        // 2. Gửi request sang Google
         var response = await _httpClient.PostAsync(url, jsonContent);
 
         if (!response.IsSuccessStatusCode)
-        {
             return "Xin lỗi, hiện tại não bộ AI của tôi đang bảo trì. Bạn vui lòng thử lại sau nhé!";
-        }
 
-        // 3. Đọc dữ liệu trả về và bóc lớp lấy đúng câu chữ
         var responseString = await response.Content.ReadAsStringAsync();
         using var jsonDocument = JsonDocument.Parse(responseString);
 
         try
         {
-            // Bóc tách JSON: candidates[0] -> content -> parts[0] -> text
             var reply = jsonDocument.RootElement
                 .GetProperty("candidates")[0]
                 .GetProperty("content")
