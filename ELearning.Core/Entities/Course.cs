@@ -9,5 +9,8 @@ public class Course
     public string? ThumbnailUrl { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+    public Guid? CreatorId { get; set; }
+    public User? Creator { get; set; }
+
     public ICollection<Chapter> Chapters { get; set; } = new List<Chapter>();
 }
