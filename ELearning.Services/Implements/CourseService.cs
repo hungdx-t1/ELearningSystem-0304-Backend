@@ -21,18 +21,43 @@ public class CourseService : ICourseService
 
     public async Task<IEnumerable<CourseResponseDto>> GetAllCoursesAsync()
     {
-        var courses = await _courseRepository.GetAllAsync();
-        return courses.Select(c => new CourseResponseDto(c.Id, c.Title, c.Description, c.ThumbnailUrl, c.CreatedAt));
+        // Dùng Include để join sang bảng User lấy tên người tạo
+        var courses = await _context.Courses
+            .Include(c => c.Creator) 
+            .ToListAsync();
+
+        return courses.Select(c => new CourseResponseDto(
+            c.Id, 
+            c.Title, 
+            c.Description, 
+            c.ThumbnailUrl, 
+            c.CreatedAt, 
+            c.CreatorId, 
+            c.Creator?.FullName // Lấy tên Giảng viên
+        ));
     }
 
     public async Task<CourseResponseDto?> GetCourseByIdAsync(Guid id)
     {
-        var course = await _courseRepository.GetByIdAsync(id);
+        var course = await _context.Courses
+            .Include(c => c.Creator)
+            .FirstOrDefaultAsync(c => c.Id == id);
+
         if (course == null) return null;
-        return new CourseResponseDto(course.Id, course.Title, course.Description, course.ThumbnailUrl, course.CreatedAt);
+
+        return new CourseResponseDto(
+            course.Id, 
+            course.Title, 
+            course.Description, 
+            course.ThumbnailUrl, 
+            course.CreatedAt, 
+            course.CreatorId, 
+            course.Creator?.FullName
+        );
     }
 
-    public async Task<CourseResponseDto> CreateCourseAsync(CreateCourseRequestDto request)
+    // 🌟 Nhận thêm creatorId từ Controller
+    public async Task<CourseResponseDto> CreateCourseAsync(CreateCourseRequestDto request, Guid creatorId)
     {
         var newCourse = new Course
         {
@@ -40,13 +65,15 @@ public class CourseService : ICourseService
             Title = request.Title,
             Description = request.Description,
             ThumbnailUrl = request.ThumbnailUrl,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            CreatorId = creatorId // Gán người tạo
         };
 
         await _courseRepository.AddAsync(newCourse);
         await _courseRepository.SaveChangesAsync();
 
-        return new CourseResponseDto(newCourse.Id, newCourse.Title, newCourse.Description, newCourse.ThumbnailUrl, newCourse.CreatedAt);
+        // Lúc mới tạo trả về luôn, tên người tạo có thể truyền null (trên UI thường tự biết là mình)
+        return new CourseResponseDto(newCourse.Id, newCourse.Title, newCourse.Description, newCourse.ThumbnailUrl, newCourse.CreatedAt, newCourse.CreatorId, null);
     }
 
     public async Task<bool> UpdateCourseAsync(Guid id, UpdateCourseRequestDto request)
@@ -54,7 +81,6 @@ public class CourseService : ICourseService
         var course = await _courseRepository.GetByIdAsync(id);
         if (course == null) return false;
 
-        // Cập nhật các trường
         course.Title = request.Title;
         course.Description = request.Description;
         course.ThumbnailUrl = request.ThumbnailUrl;
