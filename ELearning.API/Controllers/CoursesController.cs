@@ -4,6 +4,7 @@ using ELearning.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace ELearning.API.Controllers;
 
@@ -13,65 +14,98 @@ namespace ELearning.API.Controllers;
 public class CoursesController : ControllerBase
 {
     private readonly ICourseService _courseService;
+    private readonly AppDbContext _context;
 
-    public CoursesController(ICourseService courseService)
+    public CoursesController(ICourseService courseService, AppDbContext context)
     {
         _courseService = courseService;
+        _context = context;
     }
 
-    // GET: api/courses
+    // 🛡️ HÀM BẢO MẬT KIỂM TRA QUYỀN SỞ HỮU KHÓA HỌC
+    private async Task<bool> IsCourseCreatorOrAdmin(Guid courseId)
+    {
+        var role = User.FindFirstValue(ClaimTypes.Role);
+        if (role == "Admin") return true;
+
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userIdStr, out Guid userId)) return false;
+
+        var course = await _context.Courses.AsNoTracking().FirstOrDefaultAsync(c => c.Id == courseId);
+        return course != null && course.CreatorId == userId;
+    }
+
     [HttpGet]
     public async Task<ActionResult<IEnumerable<CourseResponseDto>>> GetAll()
     {
         var courses = await _courseService.GetAllCoursesAsync();
+        
+        var role = User.FindFirstValue(ClaimTypes.Role);
+        if (role == "Instructor")
+        {
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (Guid.TryParse(userIdStr, out Guid userId))
+            {
+                // Chỉ lấy khóa học do chính giảng viên này tạo
+                courses = courses.Where(c => c.CreatorId == userId).ToList();
+            }
+        }
         return Ok(courses);
     }
 
-    // GET: api/courses/{id}
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<CourseResponseDto>> GetById(Guid id, [FromServices] AppDbContext context)
     {
         var course = await _courseService.GetCourseByIdAsync(id);
         if (course == null) return NotFound(new { message = "Không tìm thấy khóa học" });
 
-        var currentUserIdStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        var currentUserRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+        var currentUserIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var currentUserRole = User.FindFirstValue(ClaimTypes.Role);
 
-        // Nếu là Học viên, kiểm tra xem có đang học lớp nào thuộc môn này không    
-        if (currentUserRole == "Student" && Guid.TryParse(currentUserIdStr, out Guid currentUserId))
+        if (Guid.TryParse(currentUserIdStr, out Guid currentUserId))
         {
-            var isEnrolledInCourse = await context.ClassEnrollments
-                .AnyAsync(e => e.StudentId == currentUserId && e.Class.CourseId == id);
-            
-            if (!isEnrolledInCourse)
+            if (currentUserRole == "Student")
             {
-                return Forbid(); // Trả về 403 nếu chưa ghi danh
+                var isEnrolledInCourse = await context.ClassEnrollments
+                    .AnyAsync(e => e.StudentId == currentUserId && e.Class.CourseId == id);
+                if (!isEnrolledInCourse) return Forbid(); 
+            }
+            else if (currentUserRole == "Instructor")
+            {
+                // Giảng viên xem chi tiết cũng phải là khóa do mình tạo
+                if (course.CreatorId != currentUserId) return Forbid();
             }
         }
         return Ok(course);
     }
 
-    // POST: api/courses
     [HttpPost]
+    [Authorize(Roles = "Instructor, Admin")]
     public async Task<ActionResult<CourseResponseDto>> Create([FromBody] CreateCourseRequestDto request)
     {
-        var newCourse = await _courseService.CreateCourseAsync(request);
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        Guid.TryParse(userIdStr, out Guid creatorId);
+
+        // Truyền ID người tạo xuống Service
+        var newCourse = await _courseService.CreateCourseAsync(request, creatorId);
         return CreatedAtAction(nameof(GetById), new { id = newCourse.Id }, newCourse);
     }
 
-    // PUT: api/courses/{id}
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateCourseRequestDto request)
     {
+        if (!await IsCourseCreatorOrAdmin(id)) return Forbid();
+
         var isUpdated = await _courseService.UpdateCourseAsync(id, request);
         if (!isUpdated) return NotFound(new { message = "Không tìm thấy khóa học để cập nhật" });
-        return NoContent(); // Code 204: Cập nhật thành công nhưng không trả về data
+        return NoContent(); 
     }
 
-    // DELETE: api/courses/{id}
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {
+        if (!await IsCourseCreatorOrAdmin(id)) return Forbid();
+
         var isDeleted = await _courseService.DeleteCourseAsync(id);
         if (!isDeleted) return NotFound(new { message = "Không tìm thấy khóa học để xóa" });
         return NoContent();
@@ -80,6 +114,8 @@ public class CoursesController : ControllerBase
     [HttpGet("{id:guid}/assignments")]
     public async Task<IActionResult> GetAssignmentsByCourse(Guid id)
     {
+        if (!await IsCourseCreatorOrAdmin(id)) return Forbid();
+
         var assignments = await _courseService.GetAssignmentsByCourseAsync(id);
         
         if (assignments == null || !assignments.Any()) 
