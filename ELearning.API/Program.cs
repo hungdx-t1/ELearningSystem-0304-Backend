@@ -113,4 +113,21 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
+// Đảm bảo Database luôn được cập nhật Migration mới nhất khi ứng dụng chạy
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<AppDbContext>();
+        // Lệnh này tương đương với gõ 'Update-Database'
+        context.Database.Migrate(); 
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Có lỗi xảy ra khi chạy Migration vào Database.");
+    }
+}
+
 app.Run();
