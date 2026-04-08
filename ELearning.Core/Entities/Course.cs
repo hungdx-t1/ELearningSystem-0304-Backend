@@ -11,6 +11,7 @@ public class Course
 
     public Guid? CreatorId { get; set; }
     public User? Creator { get; set; }
+    public bool IsPublic { get; set; } = false;
 
     public ICollection<Chapter> Chapters { get; set; } = new List<Chapter>();
 }
