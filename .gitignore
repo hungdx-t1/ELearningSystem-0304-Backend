@@ -7,3 +7,4 @@ ELearning.Infrastructure/obj/**
 ELearning.Services/bin/**
 ELearning.Services/obj/**
 ELearning.API/appsettings.json
+ELearning.API/appsettings.Development.json
