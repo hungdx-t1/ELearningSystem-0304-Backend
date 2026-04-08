@@ -22,7 +22,6 @@ public class CoursesController : ControllerBase
         _context = context;
     }
 
-    // 🛡️ HÀM BẢO MẬT KIỂM TRA QUYỀN SỞ HỮU KHÓA HỌC
     private async Task<bool> IsCourseCreatorOrAdmin(Guid courseId)
     {
         var role = User.FindFirstValue(ClaimTypes.Role);
@@ -89,6 +88,21 @@ public class CoursesController : ControllerBase
         // Truyền ID người tạo xuống Service
         var newCourse = await _courseService.CreateCourseAsync(request, creatorId);
         return CreatedAtAction(nameof(GetById), new { id = newCourse.Id }, newCourse);
+    }
+
+    [HttpPost("{id:guid}/copy")]
+    [Authorize(Roles = "Instructor, Admin")]
+    public async Task<IActionResult> Copy(Guid id)
+    {
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        Guid.TryParse(userIdStr, out Guid currentUserId);
+
+        var copiedCourse = await _courseService.CopyCourseAsync(id, currentUserId);
+        
+        if (copiedCourse == null) 
+            return BadRequest(new { message = "Khóa học không tồn tại hoặc chủ sở hữu chưa cho phép sao chép (Chưa Public)." });
+
+        return Ok(new { message = "Nhân bản khóa học thành công!", data = copiedCourse });
     }
 
     [HttpPut("{id:guid}")]
