@@ -19,9 +19,10 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:4200") // Mở cửa riêng cho Angular
+        policy.WithOrigins("http://localhost:4200", "https://e-learning-system-0304-frontend.vercel.app")
               .AllowAnyHeader()
-              .AllowAnyMethod();
+              .AllowAnyMethod()
+              .AllowCredentials(); // Cho phép gửi cookie từ frontend (nếu có)
     });
 });
 
@@ -102,12 +103,8 @@ builder.Services.AddOpenApi(options =>
 });
 var app = builder.Build();
 
-// Pipeline xử lý request
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi(); // Sinh ra bản vẽ chuẩn
-    app.MapScalarApiReference(); // Giao diện Scalar siêu đẹp thay thế Swagger
-}
+app.MapOpenApi();
+app.MapScalarApiReference();
 
 app.UseCors("AllowFrontend");
 
