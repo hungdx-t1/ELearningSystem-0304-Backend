@@ -9,7 +9,10 @@ public record SubmissionResponseDto(
     string? StudentNote, 
     DateTime SubmittedAt, 
     float? Score, 
-    string? Feedback
+    string? Feedback,
+    string? QuizAnswersJson, 
+    int CheatWarnings,       
+    bool IsSubmitted         
 );
 
 // Dành cho Sinh viên nộp bài
@@ -28,9 +31,13 @@ public record GradeSubmissionRequestDto(
 );
 
 // Dành cho Sinh viên nộp bài Trắc nghiệm (Chỉ cần gửi Điểm)
+// 08/04: Nâng cấp Request nộp bài Trắc nghiệm để hỗ trợ Auto-save (Lưu nháp) và lưu đáp án trắc nghiệm dưới dạng JSON, cũng như số lần vi phạm gian lận
 public record SubmitQuizRequestDto(
     Guid LessonId, 
     Guid ClassId, 
     Guid StudentId, 
-    float Score
+    float? Score,             // Cho phép null vì lúc Auto-save chưa có điểm
+    string? QuizAnswersJson,  // Truyền chuỗi JSON đáp án lên
+    int CheatWarnings,        // Số lần vi phạm
+    bool IsSubmitted          // True: Nộp bài thật, False: Lưu nháp (Auto-save)
 );

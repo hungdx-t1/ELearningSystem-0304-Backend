@@ -24,7 +24,7 @@ public class SubmissionService : ISubmissionService
         var submissions = await _submissionRepo.FindAsync(s => s.ClassId == classId && s.LessonId == lessonId);
         
         return submissions.Select(s => new SubmissionResponseDto(
-            s.Id, s.LessonId, s.ClassId, s.StudentId, s.SubmissionUrl, s.StudentNote, s.SubmittedAt, s.Score, s.Feedback));
+            s.Id, s.LessonId, s.ClassId, s.StudentId, s.SubmissionUrl, s.StudentNote, s.SubmittedAt, s.Score, s.Feedback, s.QuizAnswersJson, s.CheatWarnings, s.IsSubmitted));
     }
 
     public async Task<SubmissionResponseDto?> GetSubmissionAsync(Guid classId, Guid lessonId, Guid studentId)
@@ -34,12 +34,11 @@ public class SubmissionService : ISubmissionService
         
         if (s == null) return null;
         
-        return new SubmissionResponseDto(s.Id, s.LessonId, s.ClassId, s.StudentId, s.SubmissionUrl, s.StudentNote, s.SubmittedAt, s.Score, s.Feedback);
+        return new SubmissionResponseDto(s.Id, s.LessonId, s.ClassId, s.StudentId, s.SubmissionUrl, s.StudentNote, s.SubmittedAt, s.Score, s.Feedback, s.QuizAnswersJson, s.CheatWarnings, s.IsSubmitted);
     }
 
     public async Task<SubmissionResponseDto> SubmitWorkAsync(CreateSubmissionRequestDto request)
     {
-        // Kiểm tra xem sinh viên đã nộp bài trước đó chưa (Nếu có thì ghi đè/cập nhật)
         var existingSubs = await _submissionRepo.FindAsync(s => s.ClassId == request.ClassId && s.LessonId == request.LessonId && s.StudentId == request.StudentId);
         var existingSub = existingSubs.FirstOrDefault();
 
@@ -47,15 +46,15 @@ public class SubmissionService : ISubmissionService
         {
             existingSub.SubmissionUrl = request.SubmissionUrl;
             existingSub.StudentNote = request.StudentNote;
-            existingSub.SubmittedAt = DateTime.UtcNow; // Cập nhật giờ nộp mới
+            existingSub.SubmittedAt = DateTime.UtcNow; 
+            existingSub.IsSubmitted = true; // 🌟 Nộp tự luận thì auto là True
             
             _submissionRepo.Update(existingSub);
             await _submissionRepo.SaveChangesAsync();
             
-            return new SubmissionResponseDto(existingSub.Id, existingSub.LessonId, existingSub.ClassId, existingSub.StudentId, existingSub.SubmissionUrl, existingSub.StudentNote, existingSub.SubmittedAt, existingSub.Score, existingSub.Feedback);
+            return new SubmissionResponseDto(existingSub.Id, existingSub.LessonId, existingSub.ClassId, existingSub.StudentId, existingSub.SubmissionUrl, existingSub.StudentNote, existingSub.SubmittedAt, existingSub.Score, existingSub.Feedback, existingSub.QuizAnswersJson, existingSub.CheatWarnings, existingSub.IsSubmitted);
         }
 
-        // Nếu chưa nộp thì tạo mới
         var newSub = new Submission
         {
             Id = Guid.NewGuid(),
@@ -64,13 +63,14 @@ public class SubmissionService : ISubmissionService
             StudentId = request.StudentId,
             SubmissionUrl = request.SubmissionUrl,
             StudentNote = request.StudentNote,
-            SubmittedAt = DateTime.UtcNow
+            SubmittedAt = DateTime.UtcNow,
+            IsSubmitted = true // 🌟
         };
         
         await _submissionRepo.AddAsync(newSub);
         await _submissionRepo.SaveChangesAsync();
 
-        return new SubmissionResponseDto(newSub.Id, newSub.LessonId, newSub.ClassId, newSub.StudentId, newSub.SubmissionUrl, newSub.StudentNote, newSub.SubmittedAt, newSub.Score, newSub.Feedback);
+        return new SubmissionResponseDto(newSub.Id, newSub.LessonId, newSub.ClassId, newSub.StudentId, newSub.SubmissionUrl, newSub.StudentNote, newSub.SubmittedAt, newSub.Score, newSub.Feedback, newSub.QuizAnswersJson, newSub.CheatWarnings, newSub.IsSubmitted);
     }
 
     public async Task<bool> GradeSubmissionAsync(Guid id, GradeSubmissionRequestDto request)
@@ -87,21 +87,25 @@ public class SubmissionService : ISubmissionService
 
     public async Task<SubmissionResponseDto> SubmitQuizAsync(SubmitQuizRequestDto request)
     {
-        // Kiểm tra xem đã làm bài chưa (Nếu làm rồi thì cập nhật điểm mới - Tùy quy định trường bạn cho làm lại hay không)
         var existingSubs = await _submissionRepo.FindAsync(s => s.ClassId == request.ClassId && s.LessonId == request.LessonId && s.StudentId == request.StudentId);
         var existingSub = existingSubs.FirstOrDefault();
 
         if (existingSub != null)
         {
-            existingSub.Score = request.Score;
+            // Chỉ cập nhật điểm nếu request có gửi điểm lên (Tránh đè mất điểm khi lưu nháp)
+            if (request.Score.HasValue) existingSub.Score = request.Score.Value;
+            
+            existingSub.QuizAnswersJson = request.QuizAnswersJson;
+            existingSub.CheatWarnings = request.CheatWarnings;
+            existingSub.IsSubmitted = request.IsSubmitted;
             existingSub.SubmittedAt = DateTime.UtcNow;
             
             _submissionRepo.Update(existingSub);
             await _submissionRepo.SaveChangesAsync();
-            return new SubmissionResponseDto(existingSub.Id, existingSub.LessonId, existingSub.ClassId, existingSub.StudentId, existingSub.SubmissionUrl, existingSub.StudentNote, existingSub.SubmittedAt, existingSub.Score, existingSub.Feedback);
+            
+            return new SubmissionResponseDto(existingSub.Id, existingSub.LessonId, existingSub.ClassId, existingSub.StudentId, existingSub.SubmissionUrl, existingSub.StudentNote, existingSub.SubmittedAt, existingSub.Score, existingSub.Feedback, existingSub.QuizAnswersJson, existingSub.CheatWarnings, existingSub.IsSubmitted);
         }
 
-        // Chưa làm thì tạo record mới
         var newSub = new Submission
         {
             Id = Guid.NewGuid(),
@@ -109,13 +113,16 @@ public class SubmissionService : ISubmissionService
             ClassId = request.ClassId,
             StudentId = request.StudentId,
             Score = request.Score,
+            QuizAnswersJson = request.QuizAnswersJson,
+            CheatWarnings = request.CheatWarnings,
+            IsSubmitted = request.IsSubmitted,
             SubmittedAt = DateTime.UtcNow
         };
         
         await _submissionRepo.AddAsync(newSub);
         await _submissionRepo.SaveChangesAsync();
 
-        return new SubmissionResponseDto(newSub.Id, newSub.LessonId, newSub.ClassId, newSub.StudentId, newSub.SubmissionUrl, newSub.StudentNote, newSub.SubmittedAt, newSub.Score, newSub.Feedback);
+        return new SubmissionResponseDto(newSub.Id, newSub.LessonId, newSub.ClassId, newSub.StudentId, newSub.SubmissionUrl, newSub.StudentNote, newSub.SubmittedAt, newSub.Score, newSub.Feedback, newSub.QuizAnswersJson, newSub.CheatWarnings, newSub.IsSubmitted);
     }
 
     public async Task<byte[]> ExportScoresToExcelAsync(Guid lessonId)
