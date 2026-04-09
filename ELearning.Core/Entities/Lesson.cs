@@ -10,6 +10,7 @@ public class Lesson
 
     public string Title { get; set; } = string.Empty;
     public LessonType Type { get; set; } = LessonType.Video;
+    public bool IsExam { get; set; } = false;
     public VideoProvider? VideoProvider { get; set; }
     public string? VideoUrl { get; set; }
     public string? DocumentUrl { get; set; }

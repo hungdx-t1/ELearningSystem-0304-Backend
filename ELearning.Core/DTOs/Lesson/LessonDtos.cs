@@ -8,6 +8,7 @@ public record LessonResponseDto(
     Guid ChapterId,
     string Title,
     LessonType Type,
+    bool IsExam,
     VideoProvider? VideoProvider,
     string? VideoUrl,
     string? DocumentUrl,
@@ -20,6 +21,7 @@ public record CreateLessonRequestDto(
     Guid ChapterId, // Bắt buộc phải biết bài học này thuộc chương nào
     string Title,
     LessonType Type,
+    bool IsExam,
     VideoProvider? VideoProvider,
     string? VideoUrl,
     string? DocumentUrl,
@@ -31,6 +33,7 @@ public record CreateLessonRequestDto(
 public record UpdateLessonRequestDto(
     string Title,
     LessonType Type,
+    bool IsExam,
     VideoProvider? VideoProvider,
     string? VideoUrl,
     string? DocumentUrl,

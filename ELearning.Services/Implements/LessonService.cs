@@ -24,7 +24,7 @@ public class LessonService : ILessonService
         var sortedLessons = lessons.OrderBy(l => l.SortOrder);
 
         return sortedLessons.Select(l => new LessonResponseDto(
-            l.Id, l.ChapterId, l.Title, l.Type, l.VideoProvider, 
+            l.Id, l.ChapterId, l.Title, l.Type, l.IsExam, l.VideoProvider, 
             l.VideoUrl, l.DocumentUrl, l.Duration, l.SortOrder
         ));
     }
@@ -35,7 +35,7 @@ public class LessonService : ILessonService
         if (lesson == null) return null;
 
         return new LessonResponseDto(
-            lesson.Id, lesson.ChapterId, lesson.Title, lesson.Type, lesson.VideoProvider, 
+            lesson.Id, lesson.ChapterId, lesson.Title, lesson.Type, lesson.IsExam, lesson.VideoProvider, 
             lesson.VideoUrl, lesson.DocumentUrl, lesson.Duration, lesson.SortOrder
         );
     }
@@ -67,6 +67,7 @@ public class LessonService : ILessonService
             ChapterId = request.ChapterId,
             Title = request.Title,
             Type = request.Type,
+            IsExam = request.IsExam,
             VideoProvider = request.VideoProvider,
             VideoUrl = request.VideoUrl,
             DocumentUrl = request.DocumentUrl,
@@ -78,7 +79,7 @@ public class LessonService : ILessonService
         await _lessonRepository.SaveChangesAsync();
 
         return new LessonResponseDto(
-            newLesson.Id, newLesson.ChapterId, newLesson.Title, newLesson.Type, newLesson.VideoProvider, 
+            newLesson.Id, newLesson.ChapterId, newLesson.Title, newLesson.Type, newLesson.IsExam, newLesson.VideoProvider, 
             newLesson.VideoUrl, newLesson.DocumentUrl, newLesson.Duration, newLesson.SortOrder
         );
     }
@@ -93,6 +94,7 @@ public class LessonService : ILessonService
         // Cập nhật thông tin
         lesson.Title = request.Title;
         lesson.Type = request.Type;
+        lesson.IsExam = request.IsExam;
         lesson.VideoProvider = request.VideoProvider;
         lesson.VideoUrl = request.VideoUrl;
         lesson.DocumentUrl = request.DocumentUrl;
@@ -111,6 +113,4 @@ public class LessonService : ILessonService
         _lessonRepository.Delete(lesson);
         return await _lessonRepository.SaveChangesAsync();
     }
-
-
 }
