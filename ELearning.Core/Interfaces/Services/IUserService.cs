@@ -1,3 +1,4 @@
+using ELearning.Core.DTOs;
 using ELearning.Core.DTOs.User;
 
 namespace ELearning.Core.Interfaces.Services;
@@ -5,6 +6,7 @@ namespace ELearning.Core.Interfaces.Services;
 public interface IUserService
 {
     Task<IEnumerable<UserResponseDto>> GetAllUsersAsync();
+    Task<PagedResult<UserResponseDto>> GetUsersPaginatedAsync(string? search, string? role, int page, int pageSize);
     Task<UserResponseDto?> GetUserByIdAsync(Guid id);
     Task<UserResponseDto> CreateUserAsync(CreateUserRequestDto request);
     Task<bool> UpdateUserAsync(Guid id, UpdateUserRequestDto request);

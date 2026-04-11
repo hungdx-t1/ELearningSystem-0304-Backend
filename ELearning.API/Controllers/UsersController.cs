@@ -1,3 +1,4 @@
+using ELearning.Core.DTOs;
 using ELearning.Core.DTOs.User;
 using ELearning.Core.Interfaces.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -6,9 +7,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace ELearning.API.Controllers;
 
 [ApiController]
-// [Route("api/[controller]")]
 [Route("api/admin/users")]
-[Authorize(Roles = "Admin")] // Chỉ Admin mới có quyền quản lý người dùng
+[Authorize(Roles = "Admin")]
 public class UsersController : ControllerBase
 {
     private readonly IUserService _userService;
@@ -19,11 +19,23 @@ public class UsersController : ControllerBase
     }
 
     // Lấy danh sách toàn bộ người dùng (Có thể lọc theo Role sau này)
+    // [HttpGet]
+    // [Obsolete("Sử dụng endpoint GetAll với phân trang thay vì GetAll không phân trang để tránh quá tải dữ liệu")]
+    // public async Task<ActionResult<IEnumerable<UserResponseDto>>> GetAll()
+    // {
+    //     var users = await _userService.GetAllUsersAsync();
+    //     return Ok(users);
+    // }
+
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<UserResponseDto>>> GetAll()
+    public async Task<ActionResult<PagedResult<UserResponseDto>>> GetAll(
+        [FromQuery] string? search = null,
+        [FromQuery] string? role = null,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10)
     {
-        var users = await _userService.GetAllUsersAsync();
-        return Ok(users);
+        var result = await _userService.GetUsersPaginatedAsync(search, role, page, pageSize);
+        return Ok(result);
     }
 
     [HttpGet("{id:guid}")]
