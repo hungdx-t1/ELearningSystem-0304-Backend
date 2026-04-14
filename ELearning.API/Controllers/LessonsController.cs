@@ -41,16 +41,32 @@ public class LessonsController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<LessonResponseDto>> Create([FromBody] CreateLessonRequestDto request)
     {
-        var newLesson = await _lessonService.CreateLessonAsync(request);
-        return CreatedAtAction(nameof(GetById), new { id = newLesson.Id }, newLesson);
+        try
+        {
+            var newLesson = await _lessonService.CreateLessonAsync(request);
+            return CreatedAtAction(nameof(GetById), new { id = newLesson.Id }, newLesson);
+        }
+        catch (ArgumentException ex) // bắt lỗi từ service nếu có
+        {
+            // Trả về mã 400 Bad Request kèm JSON để Angular đọc được
+            return BadRequest(new { message = ex.Message }); 
+        }
     }
 
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateLessonRequestDto request)
     {
-        var isUpdated = await _lessonService.UpdateLessonAsync(id, request);
-        if (!isUpdated) return NotFound(new { message = "Không tìm thấy bài học" });
-        return NoContent();
+        try
+        {
+            var isUpdated = await _lessonService.UpdateLessonAsync(id, request);
+            if (!isUpdated) return NotFound(new { message = "Không tìm thấy bài học" });
+            return NoContent();
+        }
+        catch (ArgumentException ex) 
+        {
+            // Trả về mã 400 Bad Request kèm JSON
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [HttpDelete("{id:guid}")]

@@ -29,7 +29,7 @@ public class SubmissionsController : ControllerBase
     public async Task<IActionResult> GetStudentSubmission(Guid classId, Guid lessonId, Guid studentId)
     {
         var submission = await _submissionService.GetSubmissionAsync(classId, lessonId, studentId);
-        if (submission == null) return NotFound("Chưa nộp bài.");
+        if (submission == null) return NoContent();
         return Ok(submission);
     }
 
