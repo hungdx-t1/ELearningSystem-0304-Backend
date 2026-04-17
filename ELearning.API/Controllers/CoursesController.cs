@@ -71,8 +71,9 @@ public class CoursesController : ControllerBase
             }
             else if (currentUserRole == "Instructor")
             {
-                // Giảng viên xem chi tiết cũng phải là khóa do mình tạo
-                if (course.CreatorId != currentUserId) return Forbid();
+                // Giảng viên được xem nếu khóa học là Public HOẶC là khóa do mình tạo
+                if (!course.IsPublic && course.CreatorId != currentUserId) 
+                    return Forbid();
             }
         }
         return Ok(course);
