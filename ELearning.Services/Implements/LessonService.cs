@@ -113,4 +113,24 @@ public class LessonService : ILessonService
         _lessonRepository.Delete(lesson);
         return await _lessonRepository.SaveChangesAsync();
     }
+
+    public async Task<bool> UpdateLessonOrdersAsync(IEnumerable<UpdateLessonOrderDto> request)
+    {
+        // 1. Lấy ra danh sách các ID cần cập nhật
+        var lessonIds = request.Select(r => r.Id).ToList();
+
+        // 2. Kéo tất cả các Bài học đó từ Database lên cùng 1 lúc (tối ưu hiệu năng)
+        var lessons = await _lessonRepository.FindAsync(l => lessonIds.Contains(l.Id));
+
+        // 3. Cập nhật lại SortOrder cho từng bài
+        foreach (var lesson in lessons)
+        {
+            var newOrder = request.First(r => r.Id == lesson.Id).SortOrder;
+            lesson.SortOrder = newOrder;
+            _lessonRepository.Update(lesson);
+        }
+
+        // 4. Lưu toàn bộ thay đổi xuống DB 1 lần duy nhất
+        return await _lessonRepository.SaveChangesAsync();
+    }
 }

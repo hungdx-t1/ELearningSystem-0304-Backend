@@ -40,3 +40,6 @@ public record UpdateLessonRequestDto(
     int? Duration,
     int SortOrder
 );
+
+// 4. Dữ liệu Frontend gửi lên khi kéo thả đổi thứ tự bài học
+public record UpdateLessonOrderDto(Guid Id, int SortOrder);

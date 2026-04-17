@@ -11,4 +11,5 @@ public interface ILessonService
     Task<LessonResponseDto> CreateLessonAsync(CreateLessonRequestDto request);
     Task<bool> UpdateLessonAsync(Guid id, UpdateLessonRequestDto request);
     Task<bool> DeleteLessonAsync(Guid id);
+    Task<bool> UpdateLessonOrdersAsync(IEnumerable<UpdateLessonOrderDto> request);
 }

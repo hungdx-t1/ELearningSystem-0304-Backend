@@ -76,4 +76,12 @@ public class LessonsController : ControllerBase
         if (!isDeleted) return NotFound(new { message = "Không tìm thấy bài học" });
         return NoContent();
     }
+
+    [HttpPut("update-order")]
+    public async Task<IActionResult> UpdateOrder([FromBody] IEnumerable<UpdateLessonOrderDto> request)
+    {
+        var result = await _lessonService.UpdateLessonOrdersAsync(request);
+        if (!result) return BadRequest(new { message = "Lỗi khi cập nhật thứ tự bài học." });
+        return NoContent();
+    }
 }
