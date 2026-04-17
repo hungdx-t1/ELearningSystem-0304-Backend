@@ -83,7 +83,10 @@ public class CoursesController : ControllerBase
     public async Task<ActionResult<CourseResponseDto>> Create([FromBody] CreateCourseRequestDto request)
     {
         var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        Guid.TryParse(userIdStr, out Guid creatorId);
+        if (!Guid.TryParse(userIdStr, out Guid creatorId))
+        {
+            return Unauthorized(new { message = "Không xác định được ID người dùng hợp lệ." });
+        }
 
         // Truyền ID người tạo xuống Service
         var newCourse = await _courseService.CreateCourseAsync(request, creatorId);
@@ -95,7 +98,10 @@ public class CoursesController : ControllerBase
     public async Task<IActionResult> Copy(Guid id)
     {
         var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        Guid.TryParse(userIdStr, out Guid currentUserId);
+        if (!Guid.TryParse(userIdStr, out Guid currentUserId))
+        {
+            return Unauthorized(new { message = "Không xác định được ID người dùng hợp lệ." });
+        }
 
         var copiedCourse = await _courseService.CopyCourseAsync(id, currentUserId);
         
