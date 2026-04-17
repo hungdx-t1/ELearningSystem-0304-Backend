@@ -1,9 +1,7 @@
 @echo off
 title Khoi chay ELearning API
 
-echo ==================================================
-echo       HE THONG LMS - KHOI CHAY BACKEND API
-echo ==================================================
+echo Running backend API, please wait...
 echo.
 
 echo [1/3] Dang don dep project (dotnet clean)...
