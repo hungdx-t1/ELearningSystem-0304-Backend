@@ -16,6 +16,7 @@ public class Submission
     public string? StudentNote { get; set; } // Nội dung chữ sinh viên gõ cho phần tự luận
     public string? QuizAnswersJson { get; set; }  // Lưu đáp án trắc nghiệm dưới dạng chuỗi JSON: {"cau_1_id": "A", "cau_2_id": "C"}
     public int CheatWarnings { get; set; } = 0; // Lưu số lần Cảnh báo gian lận (Chuyển tab, thoát toàn màn hình)
+    public DateTime? StartedAt { get; set; } // Thời điểm bắt đầu làm bài (để tính thời gian)
     public bool IsSubmitted { get; set; } = false; // Đánh dấu bài thi đã nộp hay chưa (nếu đang thi mà rớt mạng thì IsSubmitted = false)
     public DateTime SubmittedAt { get; set; } = DateTime.UtcNow;
     public float? Score { get; set; }

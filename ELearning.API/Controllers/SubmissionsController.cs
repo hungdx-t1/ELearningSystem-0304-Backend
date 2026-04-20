@@ -33,6 +33,15 @@ public class SubmissionsController : ControllerBase
         return Ok(submission);
     }
 
+    [HttpPost("class/{classId:guid}/lesson/{lessonId:guid}/start-exam")]
+    public async Task<IActionResult> StartExam(Guid classId, Guid lessonId)
+    {
+        // Lấy ID thật của sinh viên bằng claim Auth (Ví dụ mock 1 studentId từ route/auth nếu có, ở đây lấy user login)
+        Guid studentId = Guid.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+        var result = await _submissionService.StartExamAsync(classId, lessonId, studentId);
+        return Ok(result);
+    }
+
     [HttpPost("submit")]
     public async Task<IActionResult> SubmitWork([FromBody] CreateSubmissionRequestDto request)
     {

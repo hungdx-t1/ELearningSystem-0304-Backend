@@ -48,6 +48,8 @@ builder.Services.AddScoped<IAiService, AiService>();
 
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IQuestionService, QuestionService>();
+builder.Services.AddScoped<IClassLessonScheduleService, ClassLessonScheduleService>();
+
 
 // Cấu hình Controllers và Swagger
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -75,7 +77,7 @@ builder.Services.AddOpenApi(options =>
     {
         document.Components ??= new OpenApiComponents();
         document.Components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
-        
+
         // Thêm ổ khóa vào kho với tên là "Bearer"
         document.Components.SecuritySchemes.Add("Bearer", new OpenApiSecurityScheme
         {
@@ -84,7 +86,7 @@ builder.Services.AddOpenApi(options =>
             BearerFormat = "JWT",
             Description = "Dán Token vào đây"
         });
-        
+
         return Task.CompletedTask;
     });
 
@@ -92,12 +94,12 @@ builder.Services.AddOpenApi(options =>
     options.AddOperationTransformer((operation, context, cancellationToken) =>
     {
         operation.Security ??= new List<OpenApiSecurityRequirement>();
-        
+
         operation.Security.Add(new OpenApiSecurityRequirement
         {
             [new OpenApiSecuritySchemeReference("Bearer", context.Document)] = new List<string>()
         });
-        
+
         return Task.CompletedTask;
     });
 });
@@ -121,7 +123,7 @@ using (var scope = app.Services.CreateScope())
     {
         var context = services.GetRequiredService<AppDbContext>();
         // Lệnh này tương đương với gõ 'Update-Database'
-        context.Database.Migrate(); 
+        context.Database.Migrate();
     }
     catch (Exception ex)
     {

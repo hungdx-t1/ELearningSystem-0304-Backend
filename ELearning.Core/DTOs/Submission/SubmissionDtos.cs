@@ -12,7 +12,8 @@ public record SubmissionResponseDto(
     string? Feedback,
     string? QuizAnswersJson, 
     int CheatWarnings,       
-    bool IsSubmitted         
+    bool IsSubmitted,
+    DateTime? StartedAt // Thêm thời điểm bắt đầu
 );
 
 // Dành cho Sinh viên nộp bài

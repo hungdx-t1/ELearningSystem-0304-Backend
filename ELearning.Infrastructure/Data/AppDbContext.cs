@@ -18,6 +18,7 @@ public class AppDbContext : DbContext
     public DbSet<Submission> Submissions => Set<Submission>();
     public DbSet<AiChatLog> AiChatLogs => Set<AiChatLog>();
     public DbSet<Question> Questions => Set<Question>();
+    public DbSet<ClassLessonSchedule> ClassLessonSchedules => Set<ClassLessonSchedule>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -51,7 +52,7 @@ public class AppDbContext : DbContext
 
         // 4. Cấu hình các quan hệ (Relation) khác có hành vi Delete Behavior
         modelBuilder.Entity<Class>()
-            .HasOne(c => c.Instructor) 
+            .HasOne(c => c.Instructor)
             .WithMany(u => u.InstructedClasses) // Trỏ về list Class bên bảng User
             .HasForeignKey(c => c.InstructorId)
             .OnDelete(DeleteBehavior.SetNull); // Nếu GV bị xóa, thì Lớp tạm thời trống GV (Set Null)
@@ -61,5 +62,22 @@ public class AppDbContext : DbContext
             .WithMany(u => u.Submissions)
             .HasForeignKey(s => s.StudentId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // Cấu hình khóa chính phức hợp cho Lịch nộp bài/Thi
+        modelBuilder.Entity<ClassLessonSchedule>()
+            .HasKey(cls => new { cls.ClassId, cls.LessonId });
+
+        modelBuilder.Entity<ClassLessonSchedule>()
+            .HasOne(cls => cls.Class)
+            .WithMany()
+            .HasForeignKey(cls => cls.ClassId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ClassLessonSchedule>()
+            .HasOne(cls => cls.Lesson)
+            .WithMany()
+            .HasForeignKey(cls => cls.LessonId)
+            .OnDelete(DeleteBehavior.Cascade);
+
     }
 }
