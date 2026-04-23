@@ -11,7 +11,7 @@ public class ClassLessonSchedule
     public Lesson Lesson { get; set; } = null!;
 
     // Cấu hình linh hoạt cho từng Lớp
-    public DateTime? StartTime { get; set; } // Giờ mở đề cho lớp này
-    public DateTime? DueDate { get; set; }   // Giờ khóa đề/hạn chót nộp bài
+    public DateTime? StartTime { get; set; }
+    public DateTime? DueDate { get; set; }
     public int? OverrideDuration { get; set; } // Ghi đè thời lượng (nếu lớp này cho 60p thay vì 45p mặc định)
 }

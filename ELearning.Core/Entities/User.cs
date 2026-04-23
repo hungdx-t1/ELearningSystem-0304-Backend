@@ -16,6 +16,12 @@ public class User
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+    // Security/OTP properties
+    public string? OtpCode { get; set; }
+    public DateTime? OtpExpiryTime { get; set; }
+    public string? ResetToken { get; set; }
+    public string? PendingNewEmail { get; set; } // Temporary hold for email change
+
     // Navigation properties
     public ICollection<ClassEnrollment> ClassEnrollments { get; set; } = new List<ClassEnrollment>();
     public ICollection<Class> InstructedClasses { get; set; } = new List<Class>();

@@ -14,12 +14,14 @@ namespace ELearning.Services.Implements;
 public class AuthService : IAuthService
 {
     private readonly IGenericRepository<User> _userRepository;
-    private readonly IConfiguration _configuration; // Để đọc appsettings.json
+    private readonly IConfiguration _configuration;
+    private readonly IEmailService _emailService;
 
-    public AuthService(IGenericRepository<User> userRepository, IConfiguration configuration)
+    public AuthService(IGenericRepository<User> userRepository, IConfiguration configuration, IEmailService emailService)
     {
         _userRepository = userRepository;
         _configuration = configuration;
+        _emailService = emailService;
     }
 
     public async Task<LoginResponseDto?> LoginAsync(LoginRequestDto request)
@@ -65,29 +67,105 @@ public class AuthService : IAuthService
         return new LoginResponseDto(jwtString, userDto);
     }
 
-    public async Task<bool> RegisterAsync(RegisterRequestDto request)
+    public async Task<bool> ForgotPasswordAsync(ForgotPasswordDto dto)
     {
-        // 1. Kiểm tra xem Email đã có ai xài chưa
-        var existingUsers = await _userRepository.FindAsync(u => u.Email == request.Email);
-        if (existingUsers.Any())
-            return false; // Email đã tồn tại
+        var users = await _userRepository.FindAsync(u => u.Email == dto.Email);
+        var user = users.FirstOrDefault();
+        
+        // Luôn trả về true để ngăn hacker dò tìm email
+        if (user == null) return true;
 
-        // 2. Tạo User mới (Nhớ băm mật khẩu ra, KHÔNG lưu mật khẩu gốc)
-        var newUser = new User
-        {
-            Id = Guid.NewGuid(),
-            Email = request.Email,
-            FullName = request.FullName,
-            Role = request.Role,
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
-         //   UserCode = request.UserCode ?? $"USR-{new Random().Next(1000, 9999)}",
-            UserCode = $"USR-{new Random().Next(1000, 9999)}",
-            CreatedAt = DateTime.UtcNow,
-            IsActive = true
-        };
+        var otp = new Random().Next(100000, 999999).ToString();
+        user.OtpCode = otp;
+        user.OtpExpiryTime = DateTime.UtcNow.AddMinutes(5);
 
-        // 3. Lưu vào DB
-        await _userRepository.AddAsync(newUser);
+        _userRepository.Update(user);
+        await _userRepository.SaveChangesAsync();
+
+        var body = $@"
+            <h3>Khôi phục mật khẩu LMS</h3>
+            <p>Mã OTP của bạn là: <strong>{otp}</strong></p>
+            <p>Mã này có hiệu lực trong vòng 5 phút. Vui lòng không chia sẻ cho bất kỳ ai.</p>";
+            
+        await _emailService.SendEmailAsync(user.Email, "LMS OTP Khôi Phục Mật Khẩu", body);
+        return true;
+    }
+
+    public async Task<string?> VerifyOtpAsync(VerifyOtpDto dto)
+    {
+        var users = await _userRepository.FindAsync(u => u.Email == dto.Email);
+        var user = users.FirstOrDefault();
+
+        if (user == null || user.OtpCode != dto.OtpCode || DateTime.UtcNow > user.OtpExpiryTime)
+            return null; // OTP sai hoặc đã hết hạn
+
+        // OTP đúng, thu hồi OTP, sinh Token đi tiếp
+        user.OtpCode = null;
+        user.OtpExpiryTime = null;
+        
+        var resetToken = Guid.NewGuid().ToString();
+        user.ResetToken = resetToken;
+
+        _userRepository.Update(user);
+        await _userRepository.SaveChangesAsync();
+
+        return resetToken;
+    }
+
+    public async Task<bool> ResetPasswordAsync(ResetPasswordDto dto)
+    {
+        var users = await _userRepository.FindAsync(u => u.ResetToken == dto.ResetToken);
+        var user = users.FirstOrDefault();
+
+        if (user == null) return false;
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
+        user.ResetToken = null; // Thu hồi Token
+
+        _userRepository.Update(user);
+        return await _userRepository.SaveChangesAsync();
+    }
+
+    public async Task<bool> RequestChangeEmailAsync(RequestChangeEmailDto dto, Guid userId)
+    {
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user == null) return false;
+
+        var existingUsers = await _userRepository.FindAsync(u => u.Email == dto.NewEmail);
+        if (existingUsers.Any()) return false; // Email mới đã có người dùng
+
+        var otp = new Random().Next(100000, 999999).ToString();
+        user.OtpCode = otp;
+        user.OtpExpiryTime = DateTime.UtcNow.AddMinutes(5);
+        user.PendingNewEmail = dto.NewEmail;
+
+        _userRepository.Update(user);
+        await _userRepository.SaveChangesAsync();
+
+        var body = $@"
+            <h3>Xác thực Đổi Email LMS</h3>
+            <p>Bạn đã yêu cầu đổi email sang địa chỉ này. Mã OTP của bạn là: <strong>{otp}</strong></p>
+            <p>Mã này có hiệu lực trong vòng 5 phút.</p>";
+
+        await _emailService.SendEmailAsync(dto.NewEmail, "LMS OTP Đổi Email", body);
+        return true;
+    }
+
+    public async Task<bool> ConfirmChangeEmailAsync(ConfirmChangeEmailDto dto, Guid userId)
+    {
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user == null || user.PendingNewEmail != dto.NewEmail) return false;
+
+        if (user.OtpCode != dto.OtpCode || DateTime.UtcNow > user.OtpExpiryTime)
+            return false;
+
+        // Tiến hành cập nhật email mới
+        user.Email = user.PendingNewEmail;
+        user.PendingNewEmail = null;
+        user.OtpCode = null;
+        user.OtpExpiryTime = null;
+
+        _userRepository.Update(user);
         return await _userRepository.SaveChangesAsync();
     }
 }
