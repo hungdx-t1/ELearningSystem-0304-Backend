@@ -17,74 +17,18 @@ public class AiService : IAiService
         _config = config;
     }
 
-    // public async Task<string> ChatWithAiAsync(string userMessage)
-    // {
-    //     var apiKey = _config["GeminiAI:ApiKey"];
-    //     var url = $"{_config["GeminiAI:Url"]}?key={apiKey}";
-
-    //     // 1. Đóng gói dữ liệu kèm theo SYSTEM INSTRUCTION (Chỉ thị hệ thống)
-    //     var requestBody = new
-    //     {
-    //         // Cài đặt "Nhân vật" và "Giới hạn" cho AI ở đây
-    //         system_instruction = new
-    //         {
-    //             parts = new[]
-    //             {
-    //                 new 
-    //                 { 
-    //                     text = "Bạn là một trợ lý ảo giáo dục tận tâm trên hệ thống quản lý học tập (LMS). Nhiệm vụ DUY NHẤT của bạn là giải đáp các thắc mắc liên quan đến kiến thức, môn học, lập trình, và hướng dẫn học tập. Nếu sinh viên hỏi bất kỳ chủ đề nào KHÔNG liên quan đến giáo dục và học thuật (ví dụ: thời tiết, game, phim ảnh, chính trị, thể thao, hay trò chuyện phiếm), bạn PHẢI TỪ CHỐI một cách lịch sự, ngắn gọn và nhắc nhở sinh viên quay lại chủ đề học tập." 
-    //                 }
-    //             }
-    //         },
-    //         // Câu hỏi thực tế của Sinh viên
-    //         contents = new[]
-    //         {
-    //             new { parts = new[] { new { text = userMessage } } }
-    //         }
-    //     };
-
-    //     var jsonContent = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
-
-    //     // 2. Gửi request sang Google
-    //     var response = await _httpClient.PostAsync(url, jsonContent);
-
-    //     if (!response.IsSuccessStatusCode)
-    //     {
-    //         return "Xin lỗi, hiện tại não bộ AI của tôi đang bảo trì. Bạn vui lòng thử lại sau nhé!";
-    //     }
-
-    //     // 3. Đọc dữ liệu trả về và bóc lớp lấy đúng câu chữ
-    //     var responseString = await response.Content.ReadAsStringAsync();
-    //     using var jsonDocument = JsonDocument.Parse(responseString);
-
-    //     try
-    //     {
-    //         // Bóc tách JSON: candidates[0] -> content -> parts[0] -> text
-    //         var reply = jsonDocument.RootElement
-    //             .GetProperty("candidates")[0]
-    //             .GetProperty("content")
-    //             .GetProperty("parts")[0]
-    //             .GetProperty("text")
-    //             .GetString();
-
-    //         return reply ?? "Mình không hiểu ý bạn lắm.";
-    //     }
-    //     catch
-    //     {
-    //         return "Lỗi khi giải mã phản hồi từ AI.";
-    //     }
-    // }
-
     public async Task<string> ChatWithAiAsync(string userMessage, IFormFile? file = null)
     {
         var apiKey = _config["GeminiAI:ApiKey"];
         var url = $"{_config["GeminiAI:Url"]}?key={apiKey}";
 
         // 1. Khởi tạo danh sách các thành phần (parts) của câu hỏi
-        var parts = new List<object> 
-        { 
-            new { text = userMessage } 
+        var parts = new List<object>
+        {
+            new { text = userMessage }
         };
+
+        string systemInstructionText = "Bạn là một trợ lý ảo giáo dục trên hệ thống LMS. Nhiệm vụ của bạn là giải đáp thắc mắc liên quan đến học thuật. TỪ CHỐI mọi câu hỏi ngoài luồng.";
 
         // 2. NẾU CÓ FILE ĐÍNH KÈM -> Chuyển thành Base64 và nhét thêm vào danh sách parts
         if (file != null && file.Length > 0)
@@ -101,6 +45,12 @@ public class AiService : IAiService
                     data = base64File
                 }
             });
+
+            systemInstructionText = @"Bạn là trợ lý ảo giải đáp bài giảng. 
+                QUY TẮC TỐI THƯỢNG: 
+                1. CHỈ ĐƯỢC PHÉP sử dụng thông tin có trong tài liệu đính kèm để trả lời. 
+                2. TUYỆT ĐỐI KHÔNG sử dụng kiến thức bên ngoài, không tự bịa đặt hay suy diễn thêm dữ kiện.
+                3. Nếu sinh viên hỏi thông tin KHÔNG CÓ trong tài liệu, bạn PHẢI TRẢ LỜI chính xác câu này: 'Xin lỗi, thông tin bạn hỏi không được đề cập trong bài học/tài liệu này.'";
         }
 
         // 3. Đóng gói dữ liệu kèm theo SYSTEM INSTRUCTION
@@ -110,9 +60,9 @@ public class AiService : IAiService
             {
                 parts = new[]
                 {
-                    new 
-                    { 
-                        text = "Bạn là một trợ lý ảo giáo dục tận tâm trên hệ thống quản lý học tập (LMS). Nhiệm vụ DUY NHẤT của bạn là giải đáp các thắc mắc liên quan đến kiến thức, môn học, lập trình, và hướng dẫn học tập. Nếu sinh viên hỏi bất kỳ chủ đề nào KHÔNG liên quan đến giáo dục và học thuật (ví dụ: thời tiết, game, phim ảnh, chính trị, thể thao, hay trò chuyện phiếm), bạn PHẢI TỪ CHỐI một cách lịch sự, ngắn gọn và nhắc nhở sinh viên quay lại chủ đề học tập." 
+                    new
+                    {
+                        text = systemInstructionText
                     }
                 }
             },
@@ -177,16 +127,16 @@ public class AiService : IAiService
             {
                 new { parts = new[] { new { text = prompt } } }
             },
-            generationConfig = new 
-            { 
-                response_mime_type = "application/json" 
+            generationConfig = new
+            {
+                response_mime_type = "application/json"
             }
         };
 
         var jsonContent = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
 
         var response = await _httpClient.PostAsync(url, jsonContent);
-        
+
         if (!response.IsSuccessStatusCode)
         {
             return "[]"; // Trả về mảng rỗng nếu gọi API thất bại
@@ -194,7 +144,7 @@ public class AiService : IAiService
 
         var responseString = await response.Content.ReadAsStringAsync();
         using var jsonDocument = JsonDocument.Parse(responseString);
-        
+
         try
         {
             var reply = jsonDocument.RootElement
@@ -224,13 +174,19 @@ public class AiService : IAiService
         var mimeType = file.ContentType; // Ví dụ: application/pdf
 
         // 2. Viết Prompt yêu cầu AI đọc tài liệu đính kèm
-        string topicInstruction = string.IsNullOrWhiteSpace(topic) 
-            ? "toàn bộ nội dung tài liệu đính kèm" 
+        string topicInstruction = string.IsNullOrWhiteSpace(topic)
+            ? "toàn bộ nội dung tài liệu đính kèm"
             : $"chủ đề '{topic}' dựa trên tài liệu đính kèm";
 
         string prompt = $@"
             Bạn là một chuyên gia giáo dục. Hãy ĐỌC KỸ TÀI LIỆU ĐÍNH KÈM và tạo {questionCount} câu hỏi trắc nghiệm tập trung vào {topicInstruction}.
-            BẮT BUỘC phải trả về đúng định dạng mảng JSON sau, KHÔNG kèm theo bất kỳ văn bản nào khác:
+            
+            CÁC QUY TẮC BẮT BUỘC PHẢI TUÂN THỦ NGHIÊM NGẶT:
+            1. CHỈ lấy dữ kiện từ trong tài liệu đính kèm để tạo câu hỏi và đáp án.
+            2. TUYỆT ĐỐI KHÔNG dùng kiến thức bên ngoài, không tự sáng tác thêm nội dung không có trong file.
+            3. Nếu tài liệu quá ngắn, không đủ thông tin để tạo đủ {questionCount} câu, hãy chỉ tạo số lượng câu hỏi tối đa mà tài liệu cho phép, không được bịa thêm cho đủ số lượng.
+            
+            BẮT BUỘC trả về đúng định dạng mảng JSON sau, KHÔNG kèm theo bất kỳ văn bản nào khác:
             [
               {{
                 ""content"": ""Nội dung câu hỏi"",
@@ -239,7 +195,7 @@ public class AiService : IAiService
                 ""optionC"": ""Đáp án C"",
                 ""optionD"": ""Đáp án D"",
                 ""correctOption"": ""A"", 
-                ""explanation"": ""Giải thích ngắn gọn lý do""
+                ""explanation"": ""Giải thích ngắn gọn lý do dựa theo tài liệu""
               }}
             ]
         ";
@@ -249,33 +205,19 @@ public class AiService : IAiService
         {
             contents = new[]
             {
-                new 
-                { 
-                    parts = new object[] 
-                    { 
-                        new { text = prompt },
-                        new 
-                        { 
-                            inline_data = new 
-                            {
-                                mime_type = mimeType,
-                                data = base64File
-                            }
-                        }
-                    } 
-                }
+                new { parts = new object[] { new { text = prompt }, new { inline_data = new { mime_type = mimeType, data = base64File } } } }
             },
             generationConfig = new { response_mime_type = "application/json" }
         };
 
         var jsonContent = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
         var response = await _httpClient.PostAsync(url, jsonContent);
-        
+
         if (!response.IsSuccessStatusCode) return "[]";
 
         var responseString = await response.Content.ReadAsStringAsync();
         using var jsonDocument = JsonDocument.Parse(responseString);
-        
+
         try
         {
             return jsonDocument.RootElement.GetProperty("candidates")[0].GetProperty("content").GetProperty("parts")[0].GetProperty("text").GetString() ?? "[]";
