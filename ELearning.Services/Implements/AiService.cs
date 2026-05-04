@@ -6,22 +6,12 @@ using System.Text.Json;
 
 namespace ELearning.Services.Implements;
 
-public class AiService : IAiService
+public class AiService(HttpClient httpClient, IConfiguration config) : IAiService
 {
-    private readonly HttpClient _httpClient;
-    private readonly IConfiguration _config;
-
-    public AiService(HttpClient httpClient, IConfiguration config)
-    {
-        _httpClient = httpClient;
-        _config = config;
-    }
-
-    // Thay đổi tham số, cho phép nhận file trực tiếp (IFormFile) HOẶC link Cloudinary (fileUrl)
     public async Task<string> ChatWithAiAsync(string userMessage, IFormFile? file = null, string? fileUrl = null)
     {
-        var apiKey = _config["GeminiAI:ApiKey"];
-        var geminiUrl = $"{_config["GeminiAI:Url"]}?key={apiKey}";
+        var apiKey = config["GeminiAI:ApiKey"];
+        var geminiUrl = $"{config["GeminiAI:Url"]}?key={apiKey}";
 
         var parts = new List<object> { new { text = userMessage } };
         string systemInstructionText = "Bạn là một trợ lý ảo giáo dục trên hệ thống LMS. Nhiệm vụ của bạn là giải đáp thắc mắc liên quan đến học thuật. TỪ CHỐI mọi câu hỏi ngoài luồng.";
@@ -42,7 +32,7 @@ public class AiService : IAiService
         {
             try
             {
-                var fileResponse = await _httpClient.GetAsync(fileUrl);
+                var fileResponse = await httpClient.GetAsync(fileUrl);
                 if (fileResponse.IsSuccessStatusCode)
                 {
                     fileBytes = await fileResponse.Content.ReadAsByteArrayAsync();
@@ -76,7 +66,7 @@ public class AiService : IAiService
         };
 
         var jsonContent = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
-        var response = await _httpClient.PostAsync(geminiUrl, jsonContent);
+        var response = await httpClient.PostAsync(geminiUrl, jsonContent);
 
         if (!response.IsSuccessStatusCode) return "Xin lỗi, hiện tại não bộ AI của tôi đang bảo trì. Bạn vui lòng thử lại sau nhé!";
 
@@ -92,8 +82,8 @@ public class AiService : IAiService
 
     public async Task<string> GenerateQuizAsync(string topic, int questionCount)
     {
-        var apiKey = _config["GeminiAI:ApiKey"];
-        var url = $"{_config["GeminiAI:Url"]}?key={apiKey}";
+        var apiKey = config["GeminiAI:ApiKey"];
+        var url = $"{config["GeminiAI:Url"]}?key={apiKey}";
 
         // 1. Viết Prompt ép AI làm giáo viên và trả về đúng schema
         string prompt = $@"
@@ -127,7 +117,7 @@ public class AiService : IAiService
 
         var jsonContent = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
 
-        var response = await _httpClient.PostAsync(url, jsonContent);
+        var response = await httpClient.PostAsync(url, jsonContent);
 
         if (!response.IsSuccessStatusCode)
         {
@@ -156,8 +146,8 @@ public class AiService : IAiService
 
     public async Task<string> GenerateQuizFromFileAsync(IFormFile file, string topic, int questionCount)
     {
-        var apiKey = _config["GeminiAI:ApiKey"];
-        var url = $"{_config["GeminiAI:Url"]}?key={apiKey}";
+        var apiKey = config["GeminiAI:ApiKey"];
+        var url = $"{config["GeminiAI:Url"]}?key={apiKey}";
 
         // 1. Chuyển file thành mảng Byte rồi ép sang Base64
         using var memoryStream = new MemoryStream();
@@ -203,7 +193,7 @@ public class AiService : IAiService
         };
 
         var jsonContent = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
-        var response = await _httpClient.PostAsync(url, jsonContent);
+        var response = await httpClient.PostAsync(url, jsonContent);
 
         if (!response.IsSuccessStatusCode) return "[]";
 
@@ -219,8 +209,8 @@ public class AiService : IAiService
 
     public async Task<string> GenerateQuizFromUrlAsync(string fileUrl, string topic, int questionCount)
     {
-        var apiKey = _config["GeminiAI:ApiKey"];
-        var geminiUrl = $"{_config["GeminiAI:Url"]}?key={apiKey}";
+        var apiKey = config["GeminiAI:ApiKey"];
+        var geminiUrl = $"{config["GeminiAI:Url"]}?key={apiKey}";
 
         // 1. BACKEND TẢI FILE TỪ CLOUDINARY VỀ BỘ NHỚ TẠM (RAM)
         byte[] fileBytes;
@@ -229,7 +219,7 @@ public class AiService : IAiService
         try
         {
             // Sử dụng luôn _httpClient có sẵn để gọi sang Cloudinary lấy file
-            var fileResponse = await _httpClient.GetAsync(fileUrl);
+            var fileResponse = await httpClient.GetAsync(fileUrl);
 
             if (!fileResponse.IsSuccessStatusCode)
                 return "[]"; // Trả về mảng rỗng nếu link hỏng
@@ -287,7 +277,7 @@ public class AiService : IAiService
         };
 
         var jsonContent = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
-        var response = await _httpClient.PostAsync(geminiUrl, jsonContent);
+        var response = await httpClient.PostAsync(geminiUrl, jsonContent);
 
         if (!response.IsSuccessStatusCode) return "[]";
 

@@ -6,26 +6,19 @@ using MimeKit;
 
 namespace ELearning.Services.Implements;
 
-public class EmailService : IEmailService
+public class EmailService(IConfiguration config) : IEmailService
 {
-    private readonly IConfiguration _config;
-
-    public EmailService(IConfiguration config)
-    {
-        _config = config;
-    }
-
     public async Task SendEmailAsync(string toEmail, string subject, string body)
     {
         var email = new MimeMessage();
-        
+
         // Cấu hình người gửi dựa vào AppSettings
-        var senderName = _config["SmtpConfig:SenderName"] ?? "LMS Admin";
-        var senderEmail = _config["SmtpConfig:SenderEmail"];
-        var password = _config["SmtpConfig:Password"];
-        var host = _config["SmtpConfig:Host"] ?? "smtp.gmail.com";
-        var portStr = _config["SmtpConfig:Port"] ?? "587";
-        
+        var senderName = config["SmtpConfig:SenderName"] ?? "LMS Admin";
+        var senderEmail = config["SmtpConfig:SenderEmail"];
+        var password = config["SmtpConfig:Password"];
+        var host = config["SmtpConfig:Host"] ?? "smtp.gmail.com";
+        var portStr = config["SmtpConfig:Port"] ?? "587";
+
         if (string.IsNullOrEmpty(senderEmail) || string.IsNullOrEmpty(password))
             throw new Exception("SmtpConfig is not properly configured in appsettings.json");
 
@@ -37,7 +30,7 @@ public class EmailService : IEmailService
         email.Body = builder.ToMessageBody();
 
         using var smtp = new SmtpClient();
-        
+
         bool parsed = int.TryParse(portStr, out int port);
         if (!parsed) port = 587;
 

@@ -5,19 +5,12 @@ using ELearning.Core.Interfaces.Services;
 
 namespace ELearning.Services.Implements;
 
-public class ChapterService : IChapterService
+public class ChapterService(IGenericRepository<Chapter> chapterRepository) : IChapterService
 {
-    private readonly IGenericRepository<Chapter> _chapterRepository;
-
-    public ChapterService(IGenericRepository<Chapter> chapterRepository)
-    {
-        _chapterRepository = chapterRepository;
-    }
-
     public async Task<IEnumerable<ChapterResponseDto>> GetChaptersByCourseIdAsync(Guid courseId)
     {
-        var chapters = await _chapterRepository.FindAsync(c => c.CourseId == courseId);
-        
+        var chapters = await chapterRepository.FindAsync(c => c.CourseId == courseId);
+
         // Sắp xếp theo thứ tự hiển thị
         var sortedChapters = chapters.OrderBy(c => c.SortOrder);
 
@@ -26,7 +19,7 @@ public class ChapterService : IChapterService
 
     public async Task<ChapterResponseDto?> GetChapterByIdAsync(Guid id)
     {
-        var chapter = await _chapterRepository.GetByIdAsync(id);
+        var chapter = await chapterRepository.GetByIdAsync(id);
         if (chapter == null) return null;
 
         return new ChapterResponseDto(chapter.Id, chapter.CourseId, chapter.Title, chapter.SortOrder);
@@ -38,7 +31,7 @@ public class ChapterService : IChapterService
         int newSortOrder = request.SortOrder;
         if (newSortOrder <= 0)
         {
-            var existingChapters = await _chapterRepository.FindAsync(c => c.CourseId == request.CourseId);
+            var existingChapters = await chapterRepository.FindAsync(c => c.CourseId == request.CourseId);
             newSortOrder = existingChapters.Any() ? existingChapters.Max(c => c.SortOrder) + 1 : 1;
         }
 
@@ -50,30 +43,30 @@ public class ChapterService : IChapterService
             SortOrder = newSortOrder
         };
 
-        await _chapterRepository.AddAsync(newChapter);
-        await _chapterRepository.SaveChangesAsync();
+        await chapterRepository.AddAsync(newChapter);
+        await chapterRepository.SaveChangesAsync();
 
         return new ChapterResponseDto(newChapter.Id, newChapter.CourseId, newChapter.Title, newChapter.SortOrder);
     }
 
     public async Task<bool> UpdateChapterAsync(Guid id, UpdateChapterRequestDto request)
     {
-        var chapter = await _chapterRepository.GetByIdAsync(id);
+        var chapter = await chapterRepository.GetByIdAsync(id);
         if (chapter == null) return false;
 
         chapter.Title = request.Title;
         chapter.SortOrder = request.SortOrder;
 
-        _chapterRepository.Update(chapter);
-        return await _chapterRepository.SaveChangesAsync();
+        chapterRepository.Update(chapter);
+        return await chapterRepository.SaveChangesAsync();
     }
 
     public async Task<bool> DeleteChapterAsync(Guid id)
     {
-        var chapter = await _chapterRepository.GetByIdAsync(id);
+        var chapter = await chapterRepository.GetByIdAsync(id);
         if (chapter == null) return false;
 
-        _chapterRepository.Delete(chapter);
-        return await _chapterRepository.SaveChangesAsync();
+        chapterRepository.Delete(chapter);
+        return await chapterRepository.SaveChangesAsync();
     }
 }

@@ -8,48 +8,39 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ELearning.Services.Implements;
 
-public class SubmissionService : ISubmissionService
+public class SubmissionService(AppDbContext context, IGenericRepository<Submission> submissionRepo) : ISubmissionService
 {
-    private readonly AppDbContext _context;
-    private readonly IGenericRepository<Submission> _submissionRepo;
-
-    public SubmissionService(AppDbContext context, IGenericRepository<Submission> submissionRepo)
-    {
-        _context = context;
-        _submissionRepo = submissionRepo;
-    }
-
     public async Task<IEnumerable<SubmissionResponseDto>> GetSubmissionsAsync(Guid classId, Guid lessonId)
     {
-        var submissions = await _submissionRepo.FindAsync(s => s.ClassId == classId && s.LessonId == lessonId);
-        
+        var submissions = await submissionRepo.FindAsync(s => s.ClassId == classId && s.LessonId == lessonId);
+
         return submissions.Select(s => new SubmissionResponseDto(
             s.Id, s.LessonId, s.ClassId, s.StudentId, s.SubmissionUrl, s.StudentNote, s.SubmittedAt, s.Score, s.Feedback, s.QuizAnswersJson, s.CheatWarnings, s.IsSubmitted, s.StartedAt));
     }
 
     public async Task<SubmissionResponseDto?> GetSubmissionAsync(Guid classId, Guid lessonId, Guid studentId)
     {
-        var subs = await _submissionRepo.FindAsync(s => s.ClassId == classId && s.LessonId == lessonId && s.StudentId == studentId);
+        var subs = await submissionRepo.FindAsync(s => s.ClassId == classId && s.LessonId == lessonId && s.StudentId == studentId);
         var s = subs.FirstOrDefault();
-        
+
         if (s == null) return null;
-        
+
         return new SubmissionResponseDto(s.Id, s.LessonId, s.ClassId, s.StudentId, s.SubmissionUrl, s.StudentNote, s.SubmittedAt, s.Score, s.Feedback, s.QuizAnswersJson, s.CheatWarnings, s.IsSubmitted, s.StartedAt);
     }
 
     public async Task<SubmissionResponseDto> StartExamAsync(Guid classId, Guid lessonId, Guid studentId)
     {
-        var subs = await _submissionRepo.FindAsync(s => s.ClassId == classId && s.LessonId == lessonId && s.StudentId == studentId);
+        var subs = await submissionRepo.FindAsync(s => s.ClassId == classId && s.LessonId == lessonId && s.StudentId == studentId);
         var existingSub = subs.FirstOrDefault();
 
         // Nếu đã có vết thì chỉ cần trả lại (để tránh F5 làm reset thời gian)
-        if (existingSub != null) 
+        if (existingSub != null)
         {
-            if (!existingSub.StartedAt.HasValue) 
+            if (!existingSub.StartedAt.HasValue)
             {
-               existingSub.StartedAt = DateTime.UtcNow;
-               _submissionRepo.Update(existingSub);
-               await _submissionRepo.SaveChangesAsync();
+                existingSub.StartedAt = DateTime.UtcNow;
+                submissionRepo.Update(existingSub);
+                await submissionRepo.SaveChangesAsync();
             }
             return new SubmissionResponseDto(existingSub.Id, existingSub.LessonId, existingSub.ClassId, existingSub.StudentId, existingSub.SubmissionUrl, existingSub.StudentNote, existingSub.SubmittedAt, existingSub.Score, existingSub.Feedback, existingSub.QuizAnswersJson, existingSub.CheatWarnings, existingSub.IsSubmitted, existingSub.StartedAt);
         }
@@ -65,27 +56,27 @@ public class SubmissionService : ISubmissionService
             IsSubmitted = false
         };
 
-        await _submissionRepo.AddAsync(newSub);
-        await _submissionRepo.SaveChangesAsync();
+        await submissionRepo.AddAsync(newSub);
+        await submissionRepo.SaveChangesAsync();
 
         return new SubmissionResponseDto(newSub.Id, newSub.LessonId, newSub.ClassId, newSub.StudentId, newSub.SubmissionUrl, newSub.StudentNote, newSub.SubmittedAt, newSub.Score, newSub.Feedback, newSub.QuizAnswersJson, newSub.CheatWarnings, newSub.IsSubmitted, newSub.StartedAt);
     }
 
     public async Task<SubmissionResponseDto> SubmitWorkAsync(CreateSubmissionRequestDto request)
     {
-        var existingSubs = await _submissionRepo.FindAsync(s => s.ClassId == request.ClassId && s.LessonId == request.LessonId && s.StudentId == request.StudentId);
+        var existingSubs = await submissionRepo.FindAsync(s => s.ClassId == request.ClassId && s.LessonId == request.LessonId && s.StudentId == request.StudentId);
         var existingSub = existingSubs.FirstOrDefault();
 
         if (existingSub != null)
         {
             existingSub.SubmissionUrl = request.SubmissionUrl;
             existingSub.StudentNote = request.StudentNote;
-            existingSub.SubmittedAt = DateTime.UtcNow; 
+            existingSub.SubmittedAt = DateTime.UtcNow;
             existingSub.IsSubmitted = true; // 🌟 Nộp tự luận thì auto là True
-            
-            _submissionRepo.Update(existingSub);
-            await _submissionRepo.SaveChangesAsync();
-            
+
+            submissionRepo.Update(existingSub);
+            await submissionRepo.SaveChangesAsync();
+
             return new SubmissionResponseDto(existingSub.Id, existingSub.LessonId, existingSub.ClassId, existingSub.StudentId, existingSub.SubmissionUrl, existingSub.StudentNote, existingSub.SubmittedAt, existingSub.Score, existingSub.Feedback, existingSub.QuizAnswersJson, existingSub.CheatWarnings, existingSub.IsSubmitted, existingSub.StartedAt);
         }
 
@@ -100,43 +91,43 @@ public class SubmissionService : ISubmissionService
             SubmittedAt = DateTime.UtcNow,
             IsSubmitted = true // 🌟
         };
-        
-        await _submissionRepo.AddAsync(newSub);
-        await _submissionRepo.SaveChangesAsync();
+
+        await submissionRepo.AddAsync(newSub);
+        await submissionRepo.SaveChangesAsync();
 
         return new SubmissionResponseDto(newSub.Id, newSub.LessonId, newSub.ClassId, newSub.StudentId, newSub.SubmissionUrl, newSub.StudentNote, newSub.SubmittedAt, newSub.Score, newSub.Feedback, newSub.QuizAnswersJson, newSub.CheatWarnings, newSub.IsSubmitted, newSub.StartedAt);
     }
 
     public async Task<bool> GradeSubmissionAsync(Guid id, GradeSubmissionRequestDto request)
     {
-        var sub = await _submissionRepo.GetByIdAsync(id);
+        var sub = await submissionRepo.GetByIdAsync(id);
         if (sub == null) return false;
 
         sub.Score = request.Score;
         sub.Feedback = request.Feedback;
-        
-        _submissionRepo.Update(sub);
-        return await _submissionRepo.SaveChangesAsync();
+
+        submissionRepo.Update(sub);
+        return await submissionRepo.SaveChangesAsync();
     }
 
     public async Task<SubmissionResponseDto> SubmitQuizAsync(SubmitQuizRequestDto request)
     {
-        var existingSubs = await _submissionRepo.FindAsync(s => s.ClassId == request.ClassId && s.LessonId == request.LessonId && s.StudentId == request.StudentId);
+        var existingSubs = await submissionRepo.FindAsync(s => s.ClassId == request.ClassId && s.LessonId == request.LessonId && s.StudentId == request.StudentId);
         var existingSub = existingSubs.FirstOrDefault();
 
         if (existingSub != null)
         {
             // Chỉ cập nhật điểm nếu request có gửi điểm lên (Tránh đè mất điểm khi lưu nháp)
             if (request.Score.HasValue) existingSub.Score = request.Score.Value;
-            
+
             existingSub.QuizAnswersJson = request.QuizAnswersJson;
             existingSub.CheatWarnings = request.CheatWarnings;
             existingSub.IsSubmitted = request.IsSubmitted;
             existingSub.SubmittedAt = DateTime.UtcNow;
-            
-            _submissionRepo.Update(existingSub);
-            await _submissionRepo.SaveChangesAsync();
-            
+
+            submissionRepo.Update(existingSub);
+            await submissionRepo.SaveChangesAsync();
+
             return new SubmissionResponseDto(existingSub.Id, existingSub.LessonId, existingSub.ClassId, existingSub.StudentId, existingSub.SubmissionUrl, existingSub.StudentNote, existingSub.SubmittedAt, existingSub.Score, existingSub.Feedback, existingSub.QuizAnswersJson, existingSub.CheatWarnings, existingSub.IsSubmitted, existingSub.StartedAt);
         }
 
@@ -152,9 +143,9 @@ public class SubmissionService : ISubmissionService
             IsSubmitted = request.IsSubmitted,
             SubmittedAt = DateTime.UtcNow
         };
-        
-        await _submissionRepo.AddAsync(newSub);
-        await _submissionRepo.SaveChangesAsync();
+
+        await submissionRepo.AddAsync(newSub);
+        await submissionRepo.SaveChangesAsync();
 
         return new SubmissionResponseDto(newSub.Id, newSub.LessonId, newSub.ClassId, newSub.StudentId, newSub.SubmissionUrl, newSub.StudentNote, newSub.SubmittedAt, newSub.Score, newSub.Feedback, newSub.QuizAnswersJson, newSub.CheatWarnings, newSub.IsSubmitted, newSub.StartedAt);
     }
@@ -162,11 +153,11 @@ public class SubmissionService : ISubmissionService
     public async Task<byte[]> ExportScoresToExcelAsync(Guid lessonId)
     {
         // (join) nối bảng Submissions và Users qua cột StudentId
-        var query = from s in _context.Submissions
-                    join u in _context.Users on s.StudentId equals u.Id
+        var query = from s in context.Submissions
+                    join u in context.Users on s.StudentId equals u.Id
                     where s.LessonId == lessonId
                     orderby s.SubmittedAt // Sắp xếp theo thời gian nộp
-                    select new 
+                    select new
                     {
                         s.Score,
                         s.SubmittedAt,
@@ -201,15 +192,18 @@ public class SubmissionService : ISubmissionService
 
             worksheet.Cell(row, 1).Value = i + 1;
             worksheet.Cell(row, 2).Value = sub.StudentName;
-            worksheet.Cell(row, 3).Value = sub.StudentCode; 
+            worksheet.Cell(row, 3).Value = sub.StudentCode;
             worksheet.Cell(row, 4).Value = sub.Score.HasValue ? sub.Score.Value.ToString() : "Chưa chấm";
             worksheet.Cell(row, 5).Value = sub.SubmittedAt.ToString("dd/MM/yyyy HH:mm");
             worksheet.Cell(row, 6).Value = sub.Score.HasValue ? "Đã chấm" : "Chờ chấm";
-            
+
             // Tô màu nhẹ cho cột Trạng thái để Giảng viên dễ nhìn
-            if (sub.Score.HasValue) {
+            if (sub.Score.HasValue)
+            {
                 worksheet.Cell(row, 6).Style.Font.FontColor = XLColor.Green;
-            } else {
+            }
+            else
+            {
                 worksheet.Cell(row, 6).Style.Font.FontColor = XLColor.Orange;
             }
 

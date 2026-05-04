@@ -5,18 +5,11 @@ using ELearning.Core.Interfaces.Services;
 
 namespace ELearning.Services.Implements;
 
-public class QuestionService : IQuestionService
+public class QuestionService(IGenericRepository<Question> questionRepo) : IQuestionService
 {
-    private readonly IGenericRepository<Question> _questionRepo;
-
-    public QuestionService(IGenericRepository<Question> questionRepo)
-    {
-        _questionRepo = questionRepo;
-    }
-
     public async Task<IEnumerable<QuestionResponseDto>> GetQuestionsByLessonIdAsync(Guid lessonId)
     {
-        var questions = await _questionRepo.FindAsync(q => q.LessonId == lessonId);
+        var questions = await questionRepo.FindAsync(q => q.LessonId == lessonId);
         return questions.Select(q => new QuestionResponseDto(
             q.Id, q.LessonId, q.Content, q.OptionA, q.OptionB, q.OptionC, q.OptionD, q.CorrectOption, q.Explanation
         ));
@@ -36,8 +29,8 @@ public class QuestionService : IQuestionService
             Explanation = request.Explanation
         };
 
-        await _questionRepo.AddAsync(question);
-        await _questionRepo.SaveChangesAsync();
+        await questionRepo.AddAsync(question);
+        await questionRepo.SaveChangesAsync();
 
         return new QuestionResponseDto(
             question.Id, question.LessonId, question.Content, question.OptionA, question.OptionB, question.OptionC, question.OptionD, question.CorrectOption, question.Explanation
@@ -46,7 +39,7 @@ public class QuestionService : IQuestionService
 
     public async Task<bool> UpdateQuestionAsync(Guid id, UpdateQuestionRequestDto request)
     {
-        var question = await _questionRepo.GetByIdAsync(id);
+        var question = await questionRepo.GetByIdAsync(id);
         if (question == null) return false;
 
         question.Content = request.Content;
@@ -57,16 +50,16 @@ public class QuestionService : IQuestionService
         question.CorrectOption = request.CorrectOption;
         question.Explanation = request.Explanation;
 
-        _questionRepo.Update(question);
-        return await _questionRepo.SaveChangesAsync();
+        questionRepo.Update(question);
+        return await questionRepo.SaveChangesAsync();
     }
 
     public async Task<bool> DeleteQuestionAsync(Guid id)
     {
-        var question = await _questionRepo.GetByIdAsync(id);
+        var question = await questionRepo.GetByIdAsync(id);
         if (question == null) return false;
 
-        _questionRepo.Delete(question);
-        return await _questionRepo.SaveChangesAsync();
+        questionRepo.Delete(question);
+        return await questionRepo.SaveChangesAsync();
     }
 }

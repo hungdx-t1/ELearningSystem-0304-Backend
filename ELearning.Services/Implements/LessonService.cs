@@ -6,36 +6,29 @@ using ELearning.Core.Interfaces.Services;
 
 namespace ELearning.Services.Implements;
 
-public class LessonService : ILessonService
+public class LessonService(IGenericRepository<Lesson> lessonRepository) : ILessonService
 {
-    private readonly IGenericRepository<Lesson> _lessonRepository;
-
-    public LessonService(IGenericRepository<Lesson> lessonRepository)
-    {
-        _lessonRepository = lessonRepository;
-    }
-
     public async Task<IEnumerable<LessonResponseDto>> GetLessonsByChapterIdAsync(Guid chapterId)
     {
         // Dùng hàm FindAsync của Generic Repository để lọc theo ChapterId
-        var lessons = await _lessonRepository.FindAsync(l => l.ChapterId == chapterId);
-        
+        var lessons = await lessonRepository.FindAsync(l => l.ChapterId == chapterId);
+
         // Sắp xếp bài học theo thứ tự (SortOrder) để Frontend hiển thị cho đúng
         var sortedLessons = lessons.OrderBy(l => l.SortOrder);
 
         return sortedLessons.Select(l => new LessonResponseDto(
-            l.Id, l.ChapterId, l.Title, l.Type, l.IsExam, l.VideoProvider, 
+            l.Id, l.ChapterId, l.Title, l.Type, l.IsExam, l.VideoProvider,
             l.VideoUrl, l.DocumentUrl, l.Duration, l.SortOrder
         ));
     }
 
     public async Task<LessonResponseDto?> GetLessonByIdAsync(Guid id)
     {
-        var lesson = await _lessonRepository.GetByIdAsync(id);
+        var lesson = await lessonRepository.GetByIdAsync(id);
         if (lesson == null) return null;
 
         return new LessonResponseDto(
-            lesson.Id, lesson.ChapterId, lesson.Title, lesson.Type, lesson.IsExam, lesson.VideoProvider, 
+            lesson.Id, lesson.ChapterId, lesson.Title, lesson.Type, lesson.IsExam, lesson.VideoProvider,
             lesson.VideoUrl, lesson.DocumentUrl, lesson.Duration, lesson.SortOrder
         );
     }
@@ -46,7 +39,7 @@ public class LessonService : ILessonService
         int newSortOrder = request.SortOrder;
         if (newSortOrder <= 0)
         {
-            var existingLessons = await _lessonRepository.FindAsync(l => l.ChapterId == request.ChapterId);
+            var existingLessons = await lessonRepository.FindAsync(l => l.ChapterId == request.ChapterId);
             newSortOrder = existingLessons.Any() ? existingLessons.Max(l => l.SortOrder) + 1 : 1;
         }
 
@@ -75,11 +68,11 @@ public class LessonService : ILessonService
             SortOrder = newSortOrder // Đã dùng số tự tính
         };
 
-        await _lessonRepository.AddAsync(newLesson);
-        await _lessonRepository.SaveChangesAsync();
+        await lessonRepository.AddAsync(newLesson);
+        await lessonRepository.SaveChangesAsync();
 
         return new LessonResponseDto(
-            newLesson.Id, newLesson.ChapterId, newLesson.Title, newLesson.Type, newLesson.IsExam, newLesson.VideoProvider, 
+            newLesson.Id, newLesson.ChapterId, newLesson.Title, newLesson.Type, newLesson.IsExam, newLesson.VideoProvider,
             newLesson.VideoUrl, newLesson.DocumentUrl, newLesson.Duration, newLesson.SortOrder
         );
     }
@@ -88,7 +81,7 @@ public class LessonService : ILessonService
     // TODO thêm LessonType
     public async Task<bool> UpdateLessonAsync(Guid id, UpdateLessonRequestDto request)
     {
-        var lesson = await _lessonRepository.GetByIdAsync(id);
+        var lesson = await lessonRepository.GetByIdAsync(id);
         if (lesson == null) return false;
 
         // Cập nhật thông tin
@@ -101,17 +94,17 @@ public class LessonService : ILessonService
         lesson.Duration = request.Duration;
         lesson.SortOrder = request.SortOrder;
 
-        _lessonRepository.Update(lesson);
-        return await _lessonRepository.SaveChangesAsync();
+        lessonRepository.Update(lesson);
+        return await lessonRepository.SaveChangesAsync();
     }
 
     public async Task<bool> DeleteLessonAsync(Guid id)
     {
-        var lesson = await _lessonRepository.GetByIdAsync(id);
+        var lesson = await lessonRepository.GetByIdAsync(id);
         if (lesson == null) return false;
 
-        _lessonRepository.Delete(lesson);
-        return await _lessonRepository.SaveChangesAsync();
+        lessonRepository.Delete(lesson);
+        return await lessonRepository.SaveChangesAsync();
     }
 
     public async Task<bool> UpdateLessonOrdersAsync(IEnumerable<UpdateLessonOrderDto> request)
@@ -120,17 +113,17 @@ public class LessonService : ILessonService
         var lessonIds = request.Select(r => r.Id).ToList();
 
         // 2. Kéo tất cả các Bài học đó từ Database lên cùng 1 lúc (tối ưu hiệu năng)
-        var lessons = await _lessonRepository.FindAsync(l => lessonIds.Contains(l.Id));
+        var lessons = await lessonRepository.FindAsync(l => lessonIds.Contains(l.Id));
 
         // 3. Cập nhật lại SortOrder cho từng bài
         foreach (var lesson in lessons)
         {
             var newOrder = request.First(r => r.Id == lesson.Id).SortOrder;
             lesson.SortOrder = newOrder;
-            _lessonRepository.Update(lesson);
+            lessonRepository.Update(lesson);
         }
 
         // 4. Lưu toàn bộ thay đổi xuống DB 1 lần duy nhất
-        return await _lessonRepository.SaveChangesAsync();
+        return await lessonRepository.SaveChangesAsync();
     }
 }

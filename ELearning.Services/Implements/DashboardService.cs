@@ -6,23 +6,15 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ELearning.Services.Implements;
 
-public class DashboardService : IDashboardService
+public class DashboardService(AppDbContext context) : IDashboardService
 {
-    private readonly AppDbContext _context;
-
-    // Tiêm thẳng DbContext vào đây cho nhanh, vì Dashboard thường query phức tạp nhiều bảng
-    public DashboardService(AppDbContext context)
-    {
-        _context = context;
-    }
-
     public async Task<DashboardResponseDto> GetDashboardSummaryAsync()
     {
         // 1. TÍNH TOÁN KPI
-        var totalStudents = await _context.Users.CountAsync(u => u.Role == UserRole.Student);
-        var activeCourses = await _context.Courses.CountAsync();
-        var runningClasses = await _context.Classes.CountAsync();
-        
+        var totalStudents = await context.Users.CountAsync(u => u.Role == UserRole.Student);
+        var activeCourses = await context.Courses.CountAsync();
+        var runningClasses = await context.Classes.CountAsync();
+
         var kpis = new List<KpiDto>
         {
             new("Tổng Học viên", totalStudents.ToString(), "+12%", true, "👨‍🎓", "bg-blue-50 text-blue-600"),
@@ -36,15 +28,15 @@ public class DashboardService : IDashboardService
         for (int i = 5; i >= 0; i--)
         {
             var targetMonth = DateTime.UtcNow.AddMonths(-i);
-            var count = await _context.ClassEnrollments
+            var count = await context.ClassEnrollments
                 .Where(e => e.EnrollmentDate.Month == targetMonth.Month && e.EnrollmentDate.Year == targetMonth.Year)
                 .CountAsync();
-                
+
             chartData.Add(new ChartDataDto($"Tháng {targetMonth.Month}", count));
         }
 
         // 3. HOẠT ĐỘNG GẦN ĐÂY
-        var recentClasses = await _context.Classes
+        var recentClasses = await context.Classes
             .Include(c => c.Course)
             .OrderByDescending(c => c.Id)
             .Take(3)

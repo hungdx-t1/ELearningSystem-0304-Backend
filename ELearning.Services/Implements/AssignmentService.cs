@@ -5,15 +5,8 @@ using ELearning.Core.Interfaces.Services;
 
 namespace ELearning.Services.Implements;
 
-public class AssignmentService : IAssignmentService
+public class AssignmentService(IGenericRepository<Assignment> assignmentRepository) : IAssignmentService
 {
-    private readonly IGenericRepository<Assignment> _assignmentRepository;
-
-    public AssignmentService(IGenericRepository<Assignment> assignmentRepository)
-    {
-        _assignmentRepository = assignmentRepository;
-    }
-
     public async Task<AssignmentResponseDto> CreateAssignmentAsync(CreateAssignmentRequestDto request)
     {
         var newAssignment = new Assignment
@@ -25,34 +18,34 @@ public class AssignmentService : IAssignmentService
             DueDate = request.DueDate
         };
 
-        await _assignmentRepository.AddAsync(newAssignment);
-        await _assignmentRepository.SaveChangesAsync();
-        
+        await assignmentRepository.AddAsync(newAssignment);
+        await assignmentRepository.SaveChangesAsync();
+
         return new AssignmentResponseDto(
             newAssignment.Id, newAssignment.LessonId, newAssignment.Title, newAssignment.Description, newAssignment.DueDate);
     }
 
     public async Task<bool> DeleteAssignmentAsync(Guid id)
     {
-        var assignment = await _assignmentRepository.GetByIdAsync(id);
+        var assignment = await assignmentRepository.GetByIdAsync(id);
         if (assignment == null)
             return false;
 
-        _assignmentRepository.Delete(assignment);
-        return await _assignmentRepository.SaveChangesAsync();
+        assignmentRepository.Delete(assignment);
+        return await assignmentRepository.SaveChangesAsync();
     }
 
     public async Task<IEnumerable<AssignmentResponseDto>> GetAllAssignmentsAsync()
     {
-        var assignments = await _assignmentRepository.GetAllAsync();
-        
+        var assignments = await assignmentRepository.GetAllAsync();
+
         return assignments.Select(a => new AssignmentResponseDto(
             a.Id, a.LessonId, a.Title, a.Description, a.DueDate));
     }
 
     public async Task<AssignmentResponseDto?> GetAssignmentByIdAsync(Guid id)
     {
-        var assignment = await _assignmentRepository.GetByIdAsync(id);
+        var assignment = await assignmentRepository.GetByIdAsync(id);
         if (assignment == null)
             return null;
 
@@ -62,7 +55,7 @@ public class AssignmentService : IAssignmentService
 
     public async Task<bool> UpdateAssignmentAsync(Guid id, UpdateAssignmentRequestDto request)
     {
-        var assignment = await _assignmentRepository.GetByIdAsync(id);
+        var assignment = await assignmentRepository.GetByIdAsync(id);
         if (assignment == null)
             return false;
 
@@ -70,7 +63,7 @@ public class AssignmentService : IAssignmentService
         assignment.Description = request.Description;
         assignment.DueDate = request.DueDate;
 
-        _assignmentRepository.Update(assignment);
-        return await _assignmentRepository.SaveChangesAsync();
+        assignmentRepository.Update(assignment);
+        return await assignmentRepository.SaveChangesAsync();
     }
 }

@@ -5,30 +5,21 @@ using ELearning.Core.DTOs.Class;
 
 namespace ELearning.Services.Implements;
 
-public class ClassService : IClassService
+public class ClassService(IGenericRepository<Class> classRepo, IGenericRepository<ClassEnrollment> enrollmentRepo) : IClassService
 {
-    private readonly IGenericRepository<Class> _classRepo;
-    private readonly IGenericRepository<ClassEnrollment> _enrollmentRepo;
-
-    public ClassService(IGenericRepository<Class> classRepo, IGenericRepository<ClassEnrollment> enrollmentRepo)
-    {
-        _classRepo = classRepo;
-        _enrollmentRepo = enrollmentRepo;
-    }
-
     public async Task<IEnumerable<ClassResponseDto>> GetAllClassesAsync()
     {
-        var classes = await _classRepo.GetAllAsync();
-        
+        var classes = await classRepo.GetAllAsync();
+
         // Cập nhật DTO: Bơm thêm CourseId và InstructorId (Lưu ý: InstructorId giờ có thể null nếu GV bị xóa)
         return classes.Select(c => new ClassResponseDto(
-            c.Id, 
-            c.CourseId, 
-            c.ClassCode, 
-            c.ClassName, 
+            c.Id,
+            c.CourseId,
+            c.ClassCode,
+            c.ClassName,
             c.InstructorId ?? Guid.Empty, // Tránh lỗi null nếu GV đã nghỉ việc
-            c.GoogleMeetLink, 
-            c.AcademicYear, 
+            c.GoogleMeetLink,
+            c.AcademicYear,
             c.Description
         ));
     }
@@ -46,18 +37,18 @@ public class ClassService : IClassService
             AcademicYear = request.AcademicYear,
             Description = request.Description
         };
-        
-        await _classRepo.AddAsync(newClass);
-        await _classRepo.SaveChangesAsync();
-        
+
+        await classRepo.AddAsync(newClass);
+        await classRepo.SaveChangesAsync();
+
         return new ClassResponseDto(
-            newClass.Id, 
-            newClass.CourseId, 
-            newClass.ClassCode, 
-            newClass.ClassName, 
-            newClass.InstructorId ?? Guid.Empty, 
-            newClass.GoogleMeetLink, 
-            newClass.AcademicYear, 
+            newClass.Id,
+            newClass.CourseId,
+            newClass.ClassCode,
+            newClass.ClassName,
+            newClass.InstructorId ?? Guid.Empty,
+            newClass.GoogleMeetLink,
+            newClass.AcademicYear,
             newClass.Description
         );
     }
@@ -65,7 +56,7 @@ public class ClassService : IClassService
     public async Task<bool> EnrollStudentAsync(Guid classId, Guid studentId)
     {
         // Kiểm tra xem đã ghi danh chưa để tránh lỗi Duplicate
-        var exists = await _enrollmentRepo.FindAsync(e => e.ClassId == classId && e.StudentId == studentId);
+        var exists = await enrollmentRepo.FindAsync(e => e.ClassId == classId && e.StudentId == studentId);
         if (exists.Any()) return true; // Đã vào lớp rồi
 
         var enrollment = new ClassEnrollment
@@ -74,13 +65,13 @@ public class ClassService : IClassService
             StudentId = studentId,
             EnrollmentDate = DateTime.UtcNow
         };
-        await _enrollmentRepo.AddAsync(enrollment);
-        return await _enrollmentRepo.SaveChangesAsync();
+        await enrollmentRepo.AddAsync(enrollment);
+        return await enrollmentRepo.SaveChangesAsync();
     }
 
     public async Task<bool> UpdateClassAsync(Guid id, UpdateClassRequestDto request)
     {
-        var existingClass = await _classRepo.GetByIdAsync(id);
+        var existingClass = await classRepo.GetByIdAsync(id);
         if (existingClass == null) return false; // Không tìm thấy lớp
 
         // Cập nhật các trường thông tin
@@ -92,16 +83,16 @@ public class ClassService : IClassService
         existingClass.AcademicYear = request.AcademicYear;
         existingClass.Description = request.Description;
 
-        _classRepo.Update(existingClass);
-        return await _classRepo.SaveChangesAsync();
+        classRepo.Update(existingClass);
+        return await classRepo.SaveChangesAsync();
     }
 
     public async Task<bool> DeleteClassAsync(Guid id)
     {
-        var existingClass = await _classRepo.GetByIdAsync(id);
+        var existingClass = await classRepo.GetByIdAsync(id);
         if (existingClass == null) return false;
 
-        _classRepo.Delete(existingClass);
-        return await _classRepo.SaveChangesAsync();
+        classRepo.Delete(existingClass);
+        return await classRepo.SaveChangesAsync();
     }
 }

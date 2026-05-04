@@ -9,26 +9,16 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ELearning.Services.Implements;
 
-public class UserService : IUserService
+public class UserService(IGenericRepository<User> userRepository, AppDbContext context) : IUserService
 {
-    private readonly IGenericRepository<User> _userRepository;
-    private readonly AppDbContext _context;
-
-    public UserService(IGenericRepository<User> userRepository, AppDbContext context)
-    {
-        _userRepository = userRepository;
-        _context = context;
-    }
-
     public async Task<PagedResult<UserResponseDto>> GetUsersPaginatedAsync(string? search, string? role, int page, int pageSize)
     {
-        var query = _context.Users.AsQueryable();
+        var query = context.Users.AsQueryable();
 
         // Lọc theo tên hoặc email
         if (!string.IsNullOrWhiteSpace(search))
         {
-            var lowerSearch = search.ToLower();
-            query = query.Where(u => u.FullName.ToLower().Contains(lowerSearch) || u.Email.ToLower().Contains(lowerSearch));
+            query = query.Where(u => u.FullName.Contains(search, StringComparison.OrdinalIgnoreCase) || u.Email.Contains(search, StringComparison.OrdinalIgnoreCase));
         }
 
         // Lọc theo Role
@@ -53,19 +43,19 @@ public class UserService : IUserService
             u.AvatarUrl, u.DateOfBirth, u.AdministrativeClass, u.IsActive, u.CreatedAt
         ));
 
-        return new PagedResult<UserResponseDto> 
-        { 
-            Items = items, 
-            TotalCount = totalCount, 
-            Page = page, 
-            PageSize = pageSize, 
-            TotalPages = totalPages 
+        return new PagedResult<UserResponseDto>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            Page = page,
+            PageSize = pageSize,
+            TotalPages = totalPages
         };
     }
 
     public async Task<IEnumerable<UserResponseDto>> GetAllUsersAsync()
     {
-        var users = await _userRepository.GetAllAsync();
+        var users = await userRepository.GetAllAsync();
 
         return users.Select(u => new UserResponseDto(
             u.Id, u.UserCode, u.FullName, u.Email, u.Role,
@@ -75,7 +65,7 @@ public class UserService : IUserService
 
     public async Task<UserResponseDto?> GetUserByIdAsync(Guid id)
     {
-        var user = await _userRepository.GetByIdAsync(id);
+        var user = await userRepository.GetByIdAsync(id);
         if (user == null) return null;
 
         return new UserResponseDto(
@@ -101,8 +91,8 @@ public class UserService : IUserService
             CreatedAt = DateTime.UtcNow
         };
 
-        await _userRepository.AddAsync(newUser);
-        await _userRepository.SaveChangesAsync();
+        await userRepository.AddAsync(newUser);
+        await userRepository.SaveChangesAsync();
 
         return new UserResponseDto(
             newUser.Id, newUser.UserCode, newUser.FullName, newUser.Email, newUser.Role,
@@ -112,7 +102,7 @@ public class UserService : IUserService
 
     public async Task<bool> UpdateUserAsync(Guid id, UpdateUserRequestDto request)
     {
-        var user = await _userRepository.GetByIdAsync(id);
+        var user = await userRepository.GetByIdAsync(id);
         if (user == null) return false;
 
         // Chỉ cập nhật những trường được phép
@@ -122,27 +112,27 @@ public class UserService : IUserService
         user.AdministrativeClass = request.AdministrativeClass;
         user.IsActive = request.IsActive;
 
-        _userRepository.Update(user);
-        return await _userRepository.SaveChangesAsync();
+        userRepository.Update(user);
+        return await userRepository.SaveChangesAsync();
     }
 
     public async Task<bool> DeleteUserAsync(Guid id)
     {
-        var user = await _userRepository.GetByIdAsync(id);
+        var user = await userRepository.GetByIdAsync(id);
         if (user == null) return false;
 
-        _userRepository.Delete(user);
-        return await _userRepository.SaveChangesAsync();
+        userRepository.Delete(user);
+        return await userRepository.SaveChangesAsync();
     }
 
     public async Task<bool> ToggleUserStatusAsync(Guid id)
     {
-        var user = await _userRepository.GetByIdAsync(id);
+        var user = await userRepository.GetByIdAsync(id);
         if (user == null) return false;
 
         user.IsActive = !user.IsActive;
-        _userRepository.Update(user);
+        userRepository.Update(user);
 
-        return await _userRepository.SaveChangesAsync();
+        return await userRepository.SaveChangesAsync();
     }
 }
