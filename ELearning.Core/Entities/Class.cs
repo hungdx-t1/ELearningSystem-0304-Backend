@@ -9,7 +9,7 @@ public class Class
     // Foreign key to Course
     public Guid CourseId { get; set; }
     public Course? Course { get; set; }
-    
+
     public Guid? InstructorId { get; set; }
     public User? Instructor { get; set; }
 
@@ -18,5 +18,5 @@ public class Class
     public string? Description { get; set; }
 
     // Navigation property
-    public ICollection<ClassEnrollment> Enrollments { get; set; } = new List<ClassEnrollment>();
+    public ICollection<ClassEnrollment> Enrollments { get; set; } = [];
 }

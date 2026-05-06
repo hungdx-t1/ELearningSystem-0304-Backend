@@ -1,32 +1,32 @@
 namespace ELearning.Core.DTOs.Class;
 
 public record ClassResponseDto(
-    Guid Id, 
-    Guid CourseId, 
-    string ClassCode, 
-    string ClassName, 
+    Guid Id,
+    Guid CourseId,
+    string ClassCode,
+    string ClassName,
     Guid InstructorId,
-    string? GoogleMeetLink, 
-    string? AcademicYear, 
+    string? GoogleMeetLink,
+    string? AcademicYear,
     string? Description
 );
 
 public record CreateClassRequestDto(
     Guid CourseId,
-    string ClassCode, 
-    string ClassName, 
-    Guid InstructorId, 
-    string? GoogleMeetLink, 
-    string? AcademicYear, 
+    string ClassCode,
+    string ClassName,
+    Guid InstructorId,
+    string? GoogleMeetLink,
+    string? AcademicYear,
     string? Description
 );
 public record UpdateClassRequestDto(
     Guid CourseId,
-    string ClassCode, 
-    string ClassName, 
+    string ClassCode,
+    string ClassName,
     Guid InstructorId,
-    string? GoogleMeetLink, 
-    string? AcademicYear, 
+    string? GoogleMeetLink,
+    string? AcademicYear,
     string? Description
 );
 public record EnrollStudentRequestDto(Guid StudentId);

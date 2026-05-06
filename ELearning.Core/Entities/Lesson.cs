@@ -17,7 +17,7 @@ public class Lesson
     public int? Duration { get; set; }
     public int SortOrder { get; set; } = 0;
 
-    public ICollection<Assignment> Assignments { get; set; } = new List<Assignment>();
+    public ICollection<Assignment> Assignments { get; set; } = [];
 
-    public ICollection<Question> Questions { get; set; } = new List<Question>();
+    public ICollection<Question> Questions { get; set; } = [];
 }
