@@ -1,4 +1,4 @@
-using ELearning.Core.DTOs.AiChat;
+using ELearning.Core.DTOs.AiChatLog;
 using ELearning.Core.Interfaces.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

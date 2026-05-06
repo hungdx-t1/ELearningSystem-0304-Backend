@@ -1,7 +1,7 @@
 using ELearning.Core.Entities;
 using ELearning.Core.Interfaces;
 using ELearning.Core.Interfaces.Services;
-using ELearning.Core.DTOs.AiChat;
+using ELearning.Core.DTOs.AiChatLog;
 
 namespace ELearning.Services.Implements;
 public class AiChatService(IGenericRepository<AiChatLog> logRepo) : IAiChatService
