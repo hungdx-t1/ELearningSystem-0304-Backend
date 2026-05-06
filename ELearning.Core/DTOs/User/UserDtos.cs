@@ -1,4 +1,7 @@
 using ELearning.Core.Enums;
+using System.ComponentModel.DataAnnotations;
+using ELearning.Core.Common.Attributes;
+using ELearning.Core.Common.Constants;
 
 namespace ELearning.Core.DTOs.User;
 
@@ -18,12 +21,20 @@ public record UserResponseDto(
 
 // 2. Dữ liệu gửi lên khi tạo tài khoản
 public record CreateUserRequestDto(
-    string UserCode,       // Ví dụ: STU2026001
-    string FullName, 
-    string Email, 
-    string Password,       // Pass gốc từ form đăng ký (Backend sẽ mã hóa sau)
+    [Required(ErrorMessage = "Mã người dùng không được để trống")] string UserCode,
+    [Required(ErrorMessage = "Họ tên không được để trống")] string FullName,
+
+    [Required(ErrorMessage = "Email không được để trống")]
+    [EmailAddress(ErrorMessage = "Sai định dạng Email")]
+    [AllowedEmailDomain("gmail.com", "outlook.com", "outlook.com.vn")]
+    string Email,
+
+    [Required(ErrorMessage = "Mật khẩu không được để trống")]
+    [RegularExpression(ValidationConstants.PasswordRegexPattern, ErrorMessage = ValidationConstants.PasswordErrorMessage)]
+    string Password,
+
     UserRole Role,
-    string? AdministrativeClass 
+    string? AdministrativeClass
 );
 
 // 3. Dữ liệu gửi lên khi Admin/User cập nhật profile
