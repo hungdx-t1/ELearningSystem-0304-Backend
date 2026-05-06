@@ -107,7 +107,14 @@ builder.Services.AddOpenApi(options =>
 var app = builder.Build();
 
 app.MapOpenApi();
-app.MapScalarApiReference();
+app.MapScalarApiReference(); // Chạy tại route: /scalar/v1
+
+app.UseSwaggerUI(options =>
+{
+    // Chỉ định Swagger UI đọc JSON Schema sinh ra từ Microsoft.AspNetCore.OpenApi
+    options.SwaggerEndpoint("/openapi/v1.json", "ELearning API v1");
+    // Swagger sẽ chạy tại route mặc định: /swagger
+});
 
 app.UseCors("AllowFrontend");
 
