@@ -8,22 +8,18 @@ namespace ELearning.API.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class AiChatLogsController : ControllerBase
+public class AiChatLogsController(IAiChatService aiChatService) : ControllerBase
 {
-    private readonly IAiChatService _aiChatService;
-
-    public AiChatLogsController(IAiChatService aiChatService) => _aiChatService = aiChatService;
-
     [HttpGet("user/{userId:guid}")]
     public async Task<IActionResult> GetHistory(Guid userId)
     {
-        return Ok(await _aiChatService.GetUserChatHistoryAsync(userId));
+        return Ok(await aiChatService.GetUserChatHistoryAsync(userId));
     }
 
     [HttpPost]
     public async Task<IActionResult> SaveLog([FromBody] CreateAiChatLogDto request)
     {
-        await _aiChatService.LogChatAsync(request);
+        await aiChatService.LogChatAsync(request);
         return Ok(new { message = "Đã lưu lịch sử chat." });
     }
 }

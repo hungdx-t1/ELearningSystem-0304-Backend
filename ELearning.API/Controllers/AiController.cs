@@ -7,16 +7,9 @@ namespace ELearning.API.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class AiController : ControllerBase
+public class AiController(IAiService aiService) : ControllerBase
 {
-    private readonly IAiService _aiService;
-
     public record GenerateQuizRequest(string Topic, int QuestionCount);
-
-    public AiController(IAiService aiService)
-    {
-        _aiService = aiService;
-    }
 
     // Dữ liệu client gửi lên
     public record ChatRequest(string Prompt);
@@ -27,9 +20,9 @@ public class AiController : ControllerBase
         if (string.IsNullOrWhiteSpace(prompt))
             return BadRequest(new { message = "Câu hỏi không được để trống" });
 
-        var reply = await _aiService.ChatWithAiAsync(prompt, file);
-        
-        return Ok(new { reply = reply });
+        var reply = await aiService.ChatWithAiAsync(prompt, file);
+
+        return Ok(new { reply });
     }
 
     [HttpPost("generate-quiz")]
@@ -38,15 +31,15 @@ public class AiController : ControllerBase
         if (string.IsNullOrWhiteSpace(request.Topic) || request.QuestionCount <= 0 || request.QuestionCount > 20)
             return BadRequest(new { message = "Vui lòng nhập chủ đề và số lượng câu hỏi hợp lệ (1-20)." });
 
-        var jsonResult = await _aiService.GenerateQuizAsync(request.Topic, request.QuestionCount);
-        
-        try 
+        var jsonResult = await aiService.GenerateQuizAsync(request.Topic, request.QuestionCount);
+
+        try
         {
             // Vì AI trả về một chuỗi JSON thuần, ta Parse nó thành Object để trả về cho Frontend dưới dạng mảng đàng hoàng
             var jsonElement = System.Text.Json.JsonSerializer.Deserialize<object>(jsonResult);
             return Ok(jsonElement);
-        } 
-        catch 
+        }
+        catch
         {
             // Đề phòng trường hợp AI bị ngáo trả về text linh tinh không parse được
             return StatusCode(500, new { message = "Lỗi khi xử lý dữ liệu từ AI." });
@@ -65,14 +58,14 @@ public class AiController : ControllerBase
         // Nếu topic bị null thì cho thành chuỗi rỗng
         var safeTopic = topic ?? "";
 
-        var jsonResult = await _aiService.GenerateQuizFromFileAsync(file, safeTopic, questionCount);
-        
-        try 
+        var jsonResult = await aiService.GenerateQuizFromFileAsync(file, safeTopic, questionCount);
+
+        try
         {
             var jsonElement = System.Text.Json.JsonSerializer.Deserialize<object>(jsonResult);
             return Ok(jsonElement);
-        } 
-        catch 
+        }
+        catch
         {
             return StatusCode(500, new { message = "Lỗi khi xử lý dữ liệu từ AI." });
         }

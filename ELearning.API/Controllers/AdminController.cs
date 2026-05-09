@@ -10,15 +10,8 @@ namespace ELearning.API.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize(Roles = "Admin")]
-public class AdminController : ControllerBase
+public class AdminController(IUserService userService) : ControllerBase
 {
-    private readonly IUserService _userService;
-
-    public AdminController(IUserService userService)
-    {
-        _userService = userService;
-    }
-
     [HttpPost("users/import")]
     public async Task<IActionResult> ImportUsers(IFormFile file)
     {
@@ -51,8 +44,8 @@ public class AdminController : ControllerBase
                     var adminClass = worksheet.Cells[row, 5].Value?.ToString()?.Trim();
 
                     // Bỏ qua nếu dòng đó trống Tên hoặc Email
-                    if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(fullName)) 
-                        continue; 
+                    if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(fullName))
+                        continue;
 
                     try
                     {
@@ -84,8 +77,8 @@ public class AdminController : ControllerBase
                         );
 
                         // 5. GỌI SERVICE LƯU XUỐNG DB
-                        await _userService.CreateUserAsync(requestDto);
-                        
+                        await userService.CreateUserAsync(requestDto);
+
                         importedUsers.Add(email);
                     }
                     catch (Exception ex)
@@ -98,19 +91,20 @@ public class AdminController : ControllerBase
         }
 
         // Trả về báo cáo chi tiết
-        return Ok(new { 
+        return Ok(new
+        {
             message = $"Đã nhập thành công {importedUsers.Count} tài khoản!",
             successCount = importedUsers.Count,
-            errors = errorRows 
+            errors = errorRows
         });
     }
-    
+
     [HttpGet("users/export")]
     public async Task<IActionResult> ExportUsers()
     {
         ExcelPackage.License.SetNonCommercialPersonal("LMS Project");
 
-        var users = await _userService.GetAllUsersAsync();
+        var users = await userService.GetAllUsersAsync();
         var userList = users.ToList(); // Ép sang List để dễ đếm index trong vòng lặp
 
         using var package = new ExcelPackage();
@@ -118,7 +112,7 @@ public class AdminController : ControllerBase
 
         // 3. TẠO THANH TIÊU ĐỀ (HEADER) - Chuẩn theo UserResponseDto
         string[] headers = { "STT", "Mã Định Danh", "Họ và Tên", "Email", "Vai trò", "Lớp hành chính", "Trạng thái", "Ngày tham gia" };
-        
+
         for (int i = 0; i < headers.Length; i++)
         {
             worksheet.Cells[1, i + 1].Value = headers[i];
@@ -164,11 +158,11 @@ public class AdminController : ControllerBase
         // 5. ĐÓNG GÓI VÀ GỬI VỀ FRONTEND
         var stream = new MemoryStream();
         await package.SaveAsAsync(stream); // Dùng Async lưu file cho mượt Server
-        stream.Position = 0; 
+        stream.Position = 0;
 
         // Tên file có kèm thời gian thực để tải nhiều lần không bị trùng tên
         string excelName = $"DanhSachNguoiDung_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
-        
+
         return File(stream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", excelName);
     }
 }

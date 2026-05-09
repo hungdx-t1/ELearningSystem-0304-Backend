@@ -18,15 +18,6 @@ public class UsersController : ControllerBase
         _userService = userService;
     }
 
-    // Lấy danh sách toàn bộ người dùng (Có thể lọc theo Role sau này)
-    // [HttpGet]
-    // [Obsolete("Sử dụng endpoint GetAll với phân trang thay vì GetAll không phân trang để tránh quá tải dữ liệu")]
-    // public async Task<ActionResult<IEnumerable<UserResponseDto>>> GetAll()
-    // {
-    //     var users = await _userService.GetAllUsersAsync();
-    //     return Ok(users);
-    // }
-
     [HttpGet]
     public async Task<ActionResult<PagedResult<UserResponseDto>>> GetAll(
         [FromQuery] string? search = null,
@@ -78,7 +69,7 @@ public class UsersController : ControllerBase
     {
         var isToggled = await _userService.ToggleUserStatusAsync(id);
         if (!isToggled) return NotFound(new { message = "Không tìm thấy người dùng" });
-        
+
         return Ok(new { message = "Đã thay đổi trạng thái thành công" });
     }
 }
