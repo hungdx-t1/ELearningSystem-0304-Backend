@@ -148,6 +148,9 @@ using (var scope = app.Services.CreateScope())
         var context = services.GetRequiredService<AppDbContext>();
         // Lệnh này tương đương với gõ 'Update-Database'
         context.Database.Migrate();
+
+        // Chạy Seed Data để tự động nạp 3 tài khoản ảo
+        ELearning.API.DatabaseSeeder.SeedMockUsersAsync(context).Wait();
     }
     catch (Exception ex)
     {
