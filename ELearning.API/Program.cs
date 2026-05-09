@@ -77,9 +77,21 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApi(options =>
 {
-    // 1. Khai báo thẻ Bearer (Cất vào kho Components)
+    // 1. Cấu hình Thông tin chung (Title, Description) và Khai báo thẻ Bearer
     options.AddDocumentTransformer((document, context, cancellationToken) =>
     {
+        document.Info = new OpenApiInfo
+        {
+            Title = "LMSPro API",
+            Description = "Tài liệu API chính thức cho hệ thống E-Learning LMSPro. Cung cấp các endpoint cho Authentication, Quản lý Khóa học, Bài tập và AI.",
+            Version = "v1",
+            Contact = new OpenApiContact
+            {
+                Name = "hungdx-t1's Team",
+                Email = "nguyenlevinhhungnt153@gmail.com"
+            }
+        };
+
         document.Components ??= new OpenApiComponents();
         document.Components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
 

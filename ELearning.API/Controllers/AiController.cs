@@ -15,6 +15,8 @@ public class AiController(IAiService aiService) : ControllerBase
     public record ChatRequest(string Prompt);
 
     [HttpPost("chat")]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Tương tác AI Chat")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Giao tiếp và nhận phản hồi từ trợ lý ảo AI.")]
     public async Task<IActionResult> Chat([FromForm] string prompt, [FromForm] IFormFile? file)
     {
         if (string.IsNullOrWhiteSpace(prompt))
@@ -26,6 +28,8 @@ public class AiController(IAiService aiService) : ControllerBase
     }
 
     [HttpPost("generate-quiz")]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Tạo câu hỏi tự động bằng AI")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Sử dụng trí tuệ nhân tạo (AI) để sinh câu hỏi tự động.")]
     public async Task<IActionResult> GenerateQuiz([FromBody] GenerateQuizRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.Topic) || request.QuestionCount <= 0 || request.QuestionCount > 20)
@@ -47,6 +51,8 @@ public class AiController(IAiService aiService) : ControllerBase
     }
 
     [HttpPost("generate-quiz-from-file")]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Tạo câu hỏi tự động từ tài liệu bằng AI")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Sử dụng trí tuệ nhân tạo (AI) để sinh câu hỏi tự động từ tài liệu.")]
     public async Task<IActionResult> GenerateQuizFromFile([FromForm] IFormFile file, [FromForm] string? topic, [FromForm] int questionCount)
     {
         if (file == null || file.Length == 0)

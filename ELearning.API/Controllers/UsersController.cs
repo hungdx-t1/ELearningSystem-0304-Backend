@@ -12,6 +12,8 @@ namespace ELearning.API.Controllers;
 public class UsersController(IUserService userService) : ControllerBase
 {
     [HttpGet]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lấy danh sách tài khoản")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Truy xuất danh sách tất cả các tài khoản trong hệ thống.")]
     public async Task<ActionResult<PagedResult<UserResponseDto>>> GetAll(
         [FromQuery] string? search = null,
         [FromQuery] string? role = null,
@@ -23,6 +25,8 @@ public class UsersController(IUserService userService) : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lấy chi tiết tài khoản bằng ID")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Truy xuất thông tin chi tiết của một tài khoản cụ thể thông qua ID.")]
     public async Task<ActionResult<UserResponseDto>> GetById(Guid id)
     {
         var user = await userService.GetUserByIdAsync(id);
@@ -32,6 +36,8 @@ public class UsersController(IUserService userService) : ControllerBase
 
     // Admin tạo người dùng mới
     [HttpPost]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Tạo mới tài khoản")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Tạo một tài khoản mới trong hệ thống.")]
     public async Task<ActionResult<UserResponseDto>> Create([FromBody] CreateUserRequestDto request)
     {
         var newUser = await userService.CreateUserAsync(request);
@@ -40,6 +46,8 @@ public class UsersController(IUserService userService) : ControllerBase
 
     // Cập nhật thông tin (ví dụ: Đổi Role, cập nhật Lớp hành chính)
     [HttpPut("{id:guid}")]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Cập nhật tài khoản")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Cập nhật thông tin của một tài khoản cụ thể.")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateUserRequestDto request)
     {
         var isUpdated = await userService.UpdateUserAsync(id, request);
@@ -49,6 +57,8 @@ public class UsersController(IUserService userService) : ControllerBase
 
     // Xóa tài khoản
     [HttpDelete("{id:guid}")]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Xóa tài khoản")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Xóa vĩnh viễn hoặc khóa một tài khoản khỏi hệ thống.")]
     public async Task<IActionResult> Delete(Guid id)
     {
         var isDeleted = await userService.DeleteUserAsync(id);
@@ -58,6 +68,8 @@ public class UsersController(IUserService userService) : ControllerBase
 
     // khóa/mở tài khoản
     [HttpPatch("{id:guid}/toggle-status")]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Khóa/mở tài khoản")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Khóa hoặc mở khóa một tài khoản cụ thể.")]
     public async Task<IActionResult> ToggleStatus(Guid id)
     {
         var isToggled = await userService.ToggleUserStatusAsync(id);

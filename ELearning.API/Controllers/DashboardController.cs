@@ -10,6 +10,8 @@ namespace ELearning.API.Controllers;
 public class DashboardController(IDashboardService dashboardService) : ControllerBase
 {
     [HttpGet]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lấy chi tiết dashboard")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Truy xuất thông tin chi tiết của một dashboard cụ thể thông qua ID.")]
     public async Task<IActionResult> GetDashboardData()
     {
         var result = await dashboardService.GetDashboardSummaryAsync();
