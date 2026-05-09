@@ -7,19 +7,12 @@ namespace ELearning.API.Controllers;
 [ApiController]
 [Route("api/admin/[controller]")]
 [Authorize]
-public class DashboardController : ControllerBase
+public class DashboardController(IDashboardService dashboardService) : ControllerBase
 {
-    private readonly IDashboardService _dashboardService;
-
-    public DashboardController(IDashboardService dashboardService)
-    {
-        _dashboardService = dashboardService;
-    }
-
     [HttpGet]
     public async Task<IActionResult> GetDashboardData()
     {
-        var result = await _dashboardService.GetDashboardSummaryAsync();
+        var result = await dashboardService.GetDashboardSummaryAsync();
         return Ok(result);
     }
 }
