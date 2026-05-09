@@ -9,15 +9,8 @@ namespace ELearning.API.Controllers;
 [ApiController]
 [Route("api/admin/users")]
 [Authorize(Roles = "Admin")]
-public class UsersController : ControllerBase
+public class UsersController(IUserService userService) : ControllerBase
 {
-    private readonly IUserService _userService;
-
-    public UsersController(IUserService userService)
-    {
-        _userService = userService;
-    }
-
     [HttpGet]
     public async Task<ActionResult<PagedResult<UserResponseDto>>> GetAll(
         [FromQuery] string? search = null,
@@ -25,14 +18,14 @@ public class UsersController : ControllerBase
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10)
     {
-        var result = await _userService.GetUsersPaginatedAsync(search, role, page, pageSize);
+        var result = await userService.GetUsersPaginatedAsync(search, role, page, pageSize);
         return Ok(result);
     }
 
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<UserResponseDto>> GetById(Guid id)
     {
-        var user = await _userService.GetUserByIdAsync(id);
+        var user = await userService.GetUserByIdAsync(id);
         if (user == null) return NotFound(new { message = "Không tìm thấy người dùng" });
         return Ok(user);
     }
@@ -41,7 +34,7 @@ public class UsersController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<UserResponseDto>> Create([FromBody] CreateUserRequestDto request)
     {
-        var newUser = await _userService.CreateUserAsync(request);
+        var newUser = await userService.CreateUserAsync(request);
         return CreatedAtAction(nameof(GetById), new { id = newUser.Id }, newUser);
     }
 
@@ -49,7 +42,7 @@ public class UsersController : ControllerBase
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateUserRequestDto request)
     {
-        var isUpdated = await _userService.UpdateUserAsync(id, request);
+        var isUpdated = await userService.UpdateUserAsync(id, request);
         if (!isUpdated) return NotFound(new { message = "Không tìm thấy người dùng" });
         return NoContent();
     }
@@ -58,7 +51,7 @@ public class UsersController : ControllerBase
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        var isDeleted = await _userService.DeleteUserAsync(id);
+        var isDeleted = await userService.DeleteUserAsync(id);
         if (!isDeleted) return NotFound(new { message = "Không tìm thấy người dùng" });
         return NoContent();
     }
@@ -67,7 +60,7 @@ public class UsersController : ControllerBase
     [HttpPatch("{id:guid}/toggle-status")]
     public async Task<IActionResult> ToggleStatus(Guid id)
     {
-        var isToggled = await _userService.ToggleUserStatusAsync(id);
+        var isToggled = await userService.ToggleUserStatusAsync(id);
         if (!isToggled) return NotFound(new { message = "Không tìm thấy người dùng" });
 
         return Ok(new { message = "Đã thay đổi trạng thái thành công" });

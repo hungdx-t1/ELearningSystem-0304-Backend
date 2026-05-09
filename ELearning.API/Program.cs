@@ -19,7 +19,11 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:4200", "https://e-learning-system-0304-frontend.vercel.app")
+        policy.WithOrigins(
+            "http://localhost:4200",
+            "https://e-learning-system-0304-frontend.vercel.app",
+            "https://e-learning-system-0304-frontend-rel.vercel.app"
+              )
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials(); // Cho phép gửi cookie từ frontend (nếu có)
