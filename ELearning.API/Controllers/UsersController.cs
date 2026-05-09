@@ -61,9 +61,16 @@ public class UsersController(IUserService userService) : ControllerBase
     [Microsoft.AspNetCore.Http.EndpointDescription("Xóa vĩnh viễn hoặc khóa một tài khoản khỏi hệ thống.")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        var isDeleted = await userService.DeleteUserAsync(id);
-        if (!isDeleted) return NotFound(new { message = "Không tìm thấy người dùng" });
-        return NoContent();
+        try
+        {
+            var isDeleted = await userService.DeleteUserAsync(id);
+            if (!isDeleted) return NotFound(new { message = "Không tìm thấy người dùng" });
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     // khóa/mở tài khoản

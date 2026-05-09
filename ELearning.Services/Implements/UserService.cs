@@ -121,8 +121,16 @@ public class UserService(IGenericRepository<User> userRepository, AppDbContext c
         var user = await userRepository.GetByIdAsync(id);
         if (user == null) return false;
 
-        userRepository.Delete(user);
-        return await userRepository.SaveChangesAsync();
+        try
+        {
+            userRepository.Delete(user);
+            return await userRepository.SaveChangesAsync();
+        }
+        catch (DbUpdateException)
+        {
+            // PostgreSQL sẽ văng lỗi khi cố xóa một Record có dính Foreign Key
+            throw new InvalidOperationException("Không thể xóa do tài khoản đang phát sinh dữ liệu, gợi ý: Hãy Khóa tài khoản thay vì Xóa.");
+        }
     }
 
     public async Task<bool> ToggleUserStatusAsync(Guid id)
