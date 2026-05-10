@@ -62,8 +62,12 @@ public class ClassesController(IClassService classService, AppDbContext context)
         if (role == "Instructor")
         {
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            // Cấm GV tạo lớp và gán cho GV khác
-            if (request.InstructorId.ToString() != userIdStr) return Forbid();
+            if (Guid.TryParse(userIdStr, out Guid userId))
+            {
+                // Frontend của Giảng viên không gửi lên InstructorId, 
+                // nên ta tự động gán luôn ID của họ vào để pass qua bảo mật
+                request = request with { InstructorId = userId };
+            }
         }
 
         return Ok(await _classService.CreateClassAsync(request));
