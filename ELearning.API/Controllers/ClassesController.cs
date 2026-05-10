@@ -116,6 +116,16 @@ public class ClassesController(IClassService classService, AppDbContext context)
         {
             if (!await IsClassOwnerOrAdmin(id)) return Forbid();
 
+            var role = User.FindFirstValue(ClaimTypes.Role);
+            if (role == "Instructor")
+            {
+                var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (Guid.TryParse(userIdStr, out Guid userId))
+                {
+                    request = request with { InstructorId = userId };
+                }
+            }
+
             var isUpdated = await _classService.UpdateClassAsync(id, request);
             if (!isUpdated) return NotFound(new { message = "Không tìm thấy lớp học để cập nhật" });
             return NoContent();
