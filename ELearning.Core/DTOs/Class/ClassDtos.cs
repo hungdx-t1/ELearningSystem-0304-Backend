@@ -30,3 +30,5 @@ public record UpdateClassRequestDto(
     string? Description
 );
 public record EnrollStudentRequestDto(Guid StudentId);
+
+public record EnrollStudentByEmailRequestDto(string EmailOrCode);

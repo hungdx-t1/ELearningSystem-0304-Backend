@@ -88,7 +88,22 @@ public class ClassesController(IClassService classService, AppDbContext context)
         if (!await IsClassOwnerOrAdmin(id)) return Forbid();
 
         var success = await _classService.EnrollStudentAsync(id, request.StudentId);
-        if (!success) return BadRequest("Lỗi khi ghi danh sinh viên.");
+        if (!success) return BadRequest(new { message = "Lỗi khi ghi danh sinh viên." });
+        return Ok(new { message = "Ghi danh thành công!" });
+    }
+
+    [HttpPost("{id:guid}/enroll-by-email")]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Ghi danh qua Email hoặc Mã")]
+    [Microsoft.AspNetCore.Http.EndpointDescription("Thêm học viên vào một lớp học dựa trên Email hoặc Mã Sinh Viên.")]
+    public async Task<IActionResult> EnrollStudentByEmail(Guid id, [FromBody] EnrollStudentByEmailRequestDto request)
+    {
+        if (!await IsClassOwnerOrAdmin(id)) return Forbid();
+
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.EmailOrCode || u.UserCode == request.EmailOrCode || u.FullName.Contains(request.EmailOrCode));
+        if (user == null) return NotFound(new { message = "Không tìm thấy Sinh viên này trong hệ thống!" });
+
+        var success = await _classService.EnrollStudentAsync(id, user.Id);
+        if (!success) return BadRequest(new { message = "Lỗi khi ghi danh sinh viên." });
         return Ok(new { message = "Ghi danh thành công!" });
     }
 
