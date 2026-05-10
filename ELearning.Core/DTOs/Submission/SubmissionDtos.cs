@@ -16,7 +16,9 @@ public record SubmissionResponseDto(
     string? QuizAnswersJson,
     int CheatWarnings,
     bool IsSubmitted,
-    DateTime? StartedAt // Thêm thời điểm bắt đầu
+    DateTime? StartedAt, //  thời điểm bắt đầu
+    string? StudentName = null,
+    string? StudentCode = null
 );
 
 // Dành cho Sinh viên nộp bài

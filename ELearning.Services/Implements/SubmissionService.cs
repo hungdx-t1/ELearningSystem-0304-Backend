@@ -12,10 +12,29 @@ public class SubmissionService(AppDbContext context, IGenericRepository<Submissi
 {
     public async Task<IEnumerable<SubmissionResponseDto>> GetSubmissionsAsync(Guid classId, Guid lessonId)
     {
-        var submissions = await submissionRepo.FindAsync(s => s.ClassId == classId && s.LessonId == lessonId);
+        // LINQ Join để kết nối bảng Submissions với bảng Users (Lấy tên và mã SV)
+        var query = from s in context.Submissions
+                    join u in context.Users on s.StudentId equals u.Id
+                    where s.ClassId == classId && s.LessonId == lessonId
+                    select new SubmissionResponseDto(
+                        s.Id,
+                        s.LessonId,
+                        s.ClassId,
+                        s.StudentId,
+                        s.SubmissionUrl,
+                        s.StudentNote,
+                        s.SubmittedAt,
+                        s.Score,
+                        s.Feedback,
+                        s.QuizAnswersJson,
+                        s.CheatWarnings,
+                        s.IsSubmitted,
+                        s.StartedAt,
+                        u.FullName ?? "Sinh viên ẩn danh",           // Map thẳng StudentName từ Db
+                        u.UserCode ?? u.Email ?? "Không rõ mã SV"    // Map thẳng StudentCode từ Db
+                    );
 
-        return submissions.Select(s => new SubmissionResponseDto(
-            s.Id, s.LessonId, s.ClassId, s.StudentId, s.SubmissionUrl, s.StudentNote, s.SubmittedAt, s.Score, s.Feedback, s.QuizAnswersJson, s.CheatWarnings, s.IsSubmitted, s.StartedAt));
+        return await query.ToListAsync();
     }
 
     public async Task<SubmissionResponseDto?> GetSubmissionAsync(Guid classId, Guid lessonId, Guid studentId)
