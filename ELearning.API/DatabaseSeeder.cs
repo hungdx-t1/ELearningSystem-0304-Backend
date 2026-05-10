@@ -9,8 +9,7 @@ public static class DatabaseSeeder
 {
     public static async Task SeedMockUsersAsync(AppDbContext context)
     {
-        // Kiểm tra xem database đã có dữ liệu mẫu chưa (dựa theo email test)
-        if (!context.Users.Any(u => u.Email == "admin@test.com"))
+        if (!context.Users.Any(u => u.Email == "admin@test.com" || u.UserCode == "ADM-0001"))
         {
             var admin = new User
             {
@@ -26,7 +25,7 @@ public static class DatabaseSeeder
             context.Users.Add(admin);
         }
 
-        if (!context.Users.Any(u => u.Email == "instructor@test.com"))
+        if (!context.Users.Any(u => u.Email == "instructor@test.com" || u.UserCode == "INS-0001"))
         {
             var instructor = new User
             {
@@ -42,7 +41,7 @@ public static class DatabaseSeeder
             context.Users.Add(instructor);
         }
 
-        if (!context.Users.Any(u => u.Email == "student@test.com"))
+        if (!context.Users.Any(u => u.Email == "student@test.com" || u.UserCode == "STU-0001"))
         {
             var student = new User
             {
@@ -59,7 +58,7 @@ public static class DatabaseSeeder
             context.Users.Add(student);
         }
 
-        // Lưu xuống DB nếu có thay đổi (Nghĩa là nếu 3 accounts chưa tồn tại)
+        // Lưu xuống DB nếu có đối tượng mới được thêm vào (Nghĩa là nếu 3 accounts trên chưa tồn tại)
         if (context.ChangeTracker.HasChanges())
         {
             await context.SaveChangesAsync();
