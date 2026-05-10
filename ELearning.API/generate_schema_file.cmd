@@ -1,0 +1,1 @@
+dotnet ef dbcontext script -o schema.sql
