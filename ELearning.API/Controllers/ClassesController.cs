@@ -58,19 +58,26 @@ public class ClassesController(IClassService classService, AppDbContext context)
     [Microsoft.AspNetCore.Http.EndpointDescription("Tạo một lớp học mới trong hệ thống.")]
     public async Task<IActionResult> Create([FromBody] CreateClassRequestDto request)
     {
-        var role = User.FindFirstValue(ClaimTypes.Role);
-        if (role == "Instructor")
+        try
         {
-            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (Guid.TryParse(userIdStr, out Guid userId))
+            var role = User.FindFirstValue(ClaimTypes.Role);
+            if (role == "Instructor")
             {
-                // Frontend của Giảng viên không gửi lên InstructorId, 
-                // nên ta tự động gán luôn ID của họ vào để pass qua bảo mật
-                request = request with { InstructorId = userId };
+                var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (Guid.TryParse(userIdStr, out Guid userId))
+                {
+                    // Frontend của Giảng viên không gửi lên InstructorId, 
+                    // nên ta tự động gán luôn ID của họ vào để pass qua bảo mật
+                    request = request with { InstructorId = userId };
+                }
             }
-        }
 
-        return Ok(await _classService.CreateClassAsync(request));
+            return Ok(await _classService.CreateClassAsync(request));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [HttpPost("{id:guid}/enroll")]
@@ -90,11 +97,18 @@ public class ClassesController(IClassService classService, AppDbContext context)
     [Microsoft.AspNetCore.Http.EndpointDescription("Cập nhật thông tin của một lớp học đã tồn tại.")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateClassRequestDto request)
     {
-        if (!await IsClassOwnerOrAdmin(id)) return Forbid();
+        try
+        {
+            if (!await IsClassOwnerOrAdmin(id)) return Forbid();
 
-        var isUpdated = await _classService.UpdateClassAsync(id, request);
-        if (!isUpdated) return NotFound(new { message = "Không tìm thấy lớp học để cập nhật" });
-        return NoContent();
+            var isUpdated = await _classService.UpdateClassAsync(id, request);
+            if (!isUpdated) return NotFound(new { message = "Không tìm thấy lớp học để cập nhật" });
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [HttpDelete("{id:guid}")]

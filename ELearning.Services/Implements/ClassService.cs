@@ -26,6 +26,12 @@ public class ClassService(IGenericRepository<Class> classRepo, IGenericRepositor
 
     public async Task<ClassResponseDto> CreateClassAsync(CreateClassRequestDto request)
     {
+        var existingCode = await classRepo.FindAsync(c => c.ClassCode.ToLower() == request.ClassCode.ToLower());
+        if (existingCode.Any())
+        {
+            throw new InvalidOperationException("Mã lớp học đã tồn tại. Vui lòng nhập mã khác.");
+        }
+
         var newClass = new Class
         {
             Id = Guid.NewGuid(),
@@ -73,6 +79,12 @@ public class ClassService(IGenericRepository<Class> classRepo, IGenericRepositor
     {
         var existingClass = await classRepo.GetByIdAsync(id);
         if (existingClass == null) return false; // Không tìm thấy lớp
+
+        var duplicateCode = await classRepo.FindAsync(c => c.Id != id && c.ClassCode.ToLower() == request.ClassCode.ToLower());
+        if (duplicateCode.Any())
+        {
+            throw new InvalidOperationException("Mã lớp học đã tồn tại. Vui lòng nhập mã khác.");
+        }
 
         // Cập nhật các trường thông tin
         existingClass.CourseId = request.CourseId;
