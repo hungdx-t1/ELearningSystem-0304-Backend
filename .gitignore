@@ -6,6 +6,8 @@ ELearning.Infrastructure/bin/**
 ELearning.Infrastructure/obj/**
 ELearning.Services/bin/**
 ELearning.Services/obj/**
+ELearning.Tests/bin/**
+ELearning.Tests/obj/**
 ELearning.API/appsettings.json
 ELearning.API/appsettings.Development.json
 .idea/.idea.ELearningSystem/.idea/encodings.xml
