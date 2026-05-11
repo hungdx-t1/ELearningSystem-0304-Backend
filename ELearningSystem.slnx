@@ -3,4 +3,5 @@
   <Project Path="ELearning.Core/ELearning.Core.csproj" />
   <Project Path="ELearning.Infrastructure/ELearning.Infrastructure.csproj" />
   <Project Path="ELearning.Services/ELearning.Services.csproj" />
+  <Project Path="ELearning.Tests/ELearning.Tests.csproj" />
 </Solution>
