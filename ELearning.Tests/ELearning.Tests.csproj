@@ -22,6 +22,7 @@
   <ItemGroup>
     <ProjectReference Include="..\ELearning.Core\ELearning.Core.csproj" />
     <ProjectReference Include="..\ELearning.Services\ELearning.Services.csproj" />
+    <ProjectReference Include="..\ELearning.API\ELearning.API.csproj" />
   </ItemGroup>
 
 </Project>
