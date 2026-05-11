@@ -237,4 +237,25 @@ public class SubmissionService(AppDbContext context, IGenericRepository<Submissi
         workbook.SaveAs(stream);
         return stream.ToArray();
     }
+
+    public async Task<IEnumerable<SubmissionHistoryDto>> GetStudentHistoryAsync(Guid studentId)
+    {
+        var query = from s in context.Submissions
+                    join l in context.Lessons on s.LessonId equals l.Id
+                    join c in context.Classes on s.ClassId equals c.Id
+                    where s.StudentId == studentId && s.IsSubmitted
+                    orderby s.SubmittedAt descending
+                    select new SubmissionHistoryDto(
+                        s.Id,
+                        s.LessonId,
+                        l.Title,
+                        s.ClassId,
+                        c.ClassName,
+                        s.SubmittedAt,
+                        s.Score,
+                        s.IsSubmitted
+                    );
+
+        return await query.ToListAsync();
+    }
 }

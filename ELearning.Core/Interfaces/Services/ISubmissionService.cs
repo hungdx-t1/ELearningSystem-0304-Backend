@@ -16,4 +16,5 @@ public interface ISubmissionService
     Task<bool> GradeSubmissionAsync(Guid id, GradeSubmissionRequestDto request);
     Task<SubmissionResponseDto> SubmitQuizAsync(SubmitQuizRequestDto request);
     Task<byte[]> ExportScoresToExcelAsync(Guid lessonId);
+    Task<IEnumerable<SubmissionHistoryDto>> GetStudentHistoryAsync(Guid studentId);
 }

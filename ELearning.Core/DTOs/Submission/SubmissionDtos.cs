@@ -50,3 +50,15 @@ public record SubmitQuizRequestDto(
     int CheatWarnings,        // Số lần vi phạm
     bool IsSubmitted          // True: Nộp bài thật, False: Lưu nháp (Auto-save)
 );
+
+// Dành cho tính năng xem lịch sử bài nộp của học viên
+public record SubmissionHistoryDto(
+    Guid Id,
+    Guid LessonId,
+    string LessonTitle,
+    Guid ClassId,
+    string ClassName,
+    DateTime SubmittedAt,
+    float? Score,
+    bool IsSubmitted
+);

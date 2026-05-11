@@ -37,6 +37,15 @@ public class SubmissionsController : ControllerBase
         return Ok(submission);
     }
 
+    [HttpGet("student/history")]
+    [Microsoft.AspNetCore.Http.EndpointSummary("Lấy lịch sử bài nộp của sinh viên")]
+    public async Task<IActionResult> GetStudentHistory()
+    {
+        Guid studentId = Guid.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+        var history = await _submissionService.GetStudentHistoryAsync(studentId);
+        return Ok(history);
+    }
+
     [HttpPost("class/{classId:guid}/lesson/{lessonId:guid}/start-exam")]
     [Microsoft.AspNetCore.Http.EndpointSummary("Bắt đầu bài kiểm tra")]
     [Microsoft.AspNetCore.Http.EndpointDescription("Học viên bắt đầu làm bài kiểm tra.")]
