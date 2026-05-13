@@ -4,8 +4,6 @@ namespace ELearning.Core.Interfaces.Services;
 
 public interface IAiService
 {
-    // Task<string> ChatWithAiAsync(string userMessage);
-    Task<string> GenerateQuizAsync(string topic, int questionCount);
-    Task<string> GenerateQuizFromFileAsync(IFormFile file, string topic, int questionCount);
-    Task<string> ChatWithAiAsync(string userMessage, IFormFile? file = null, string? fileUrl = null);
+    Task<string> ChatWithAiAsync(string userMessage, List<Guid>? lessonIds, IFormFile? file = null);
+    Task<string> GenerateQuizAsync(string topic, int questionCount, List<Guid>? lessonIds, IFormFile? file = null);
 }

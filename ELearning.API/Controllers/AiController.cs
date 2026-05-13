@@ -1,6 +1,7 @@
 using ELearning.Core.Interfaces.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ELearning.Core.DTOs.Ai;
 
 namespace ELearning.API.Controllers;
 
@@ -9,62 +10,33 @@ namespace ELearning.API.Controllers;
 [Authorize]
 public class AiController(IAiService aiService) : ControllerBase
 {
-    public record GenerateQuizRequest(string Topic, int QuestionCount);
-
-    // Dữ liệu client gửi lên
-    public record ChatRequest(string Prompt);
-
     [HttpPost("chat")]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Tương tác AI Chat")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Giao tiếp và nhận phản hồi từ trợ lý ảo AI.")]
-    public async Task<IActionResult> Chat([FromForm] string prompt, [FromForm] IFormFile? file)
+    [EndpointSummary("Tương tác AI Chat")]
+    [EndpointDescription("Giao tiếp và nhận phản hồi từ trợ lý ảo AI (Hỗ trợ text, up file, và chọn bài học).")]
+    public async Task<IActionResult> Chat([FromForm] string prompt, [FromForm] List<Guid>? lessonIds, [FromForm] IFormFile? file)
     {
         if (string.IsNullOrWhiteSpace(prompt))
             return BadRequest(new { message = "Câu hỏi không được để trống" });
 
-        var reply = await aiService.ChatWithAiAsync(prompt, file);
-
+        var reply = await aiService.ChatWithAiAsync(prompt, lessonIds, file);
         return Ok(new { reply });
     }
 
     [HttpPost("generate-quiz")]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Tạo câu hỏi tự động bằng AI")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Sử dụng trí tuệ nhân tạo (AI) để sinh câu hỏi tự động.")]
-    public async Task<IActionResult> GenerateQuiz([FromBody] GenerateQuizRequest request)
+    [EndpointSummary("Tạo câu hỏi tự động bằng AI (Hỗ trợ Text, File, Bài học)")]
+    [EndpointDescription("Sử dụng AI để sinh câu hỏi trắc nghiệm dựa trên chủ đề, tài liệu tải lên hoặc tài liệu có sẵn trong khóa học.")]
+    public async Task<IActionResult> GenerateQuiz(
+        [FromForm] string? topic,
+        [FromForm] int questionCount,
+        [FromForm] List<Guid>? lessonIds,
+        [FromForm] IFormFile? file)
     {
-        if (string.IsNullOrWhiteSpace(request.Topic) || request.QuestionCount <= 0 || request.QuestionCount > 20)
-            return BadRequest(new { message = "Vui lòng nhập chủ đề và số lượng câu hỏi hợp lệ (1-20)." });
-
-        var jsonResult = await aiService.GenerateQuizAsync(request.Topic, request.QuestionCount);
-
-        try
-        {
-            // Vì AI trả về một chuỗi JSON thuần, ta Parse nó thành Object để trả về cho Frontend dưới dạng mảng đàng hoàng
-            var jsonElement = System.Text.Json.JsonSerializer.Deserialize<object>(jsonResult);
-            return Ok(jsonElement);
-        }
-        catch
-        {
-            // Đề phòng trường hợp AI bị ngáo trả về text linh tinh không parse được
-            return StatusCode(500, new { message = "Lỗi khi xử lý dữ liệu từ AI." });
-        }
-    }
-
-    [HttpPost("generate-quiz-from-file")]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Tạo câu hỏi tự động từ tài liệu bằng AI")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Sử dụng trí tuệ nhân tạo (AI) để sinh câu hỏi tự động từ tài liệu.")]
-    public async Task<IActionResult> GenerateQuizFromFile([FromForm] IFormFile file, [FromForm] string? topic, [FromForm] int questionCount)
-    {
-        if (file == null || file.Length == 0)
-            return BadRequest(new { message = "Vui lòng đính kèm tài liệu." });
-
         if (questionCount <= 0 || questionCount > 20)
             return BadRequest(new { message = "Số lượng câu hỏi phải từ 1 đến 20." });
 
-        // Nếu topic bị null thì cho thành chuỗi rỗng
-        var safeTopic = topic ?? "";
+        var safeTopic = topic ?? "tổng hợp kiến thức";
 
-        var jsonResult = await aiService.GenerateQuizFromFileAsync(file, safeTopic, questionCount);
+        var jsonResult = await aiService.GenerateQuizAsync(safeTopic, questionCount, lessonIds, file);
 
         try
         {
