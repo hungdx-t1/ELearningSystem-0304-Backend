@@ -1,7 +1,6 @@
 using ELearning.Core.Interfaces.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using ELearning.Core.DTOs.Ai;
 
 namespace ELearning.API.Controllers;
 
