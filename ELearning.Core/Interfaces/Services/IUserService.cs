@@ -12,4 +12,6 @@ public interface IUserService
     Task<bool> UpdateUserAsync(Guid id, UpdateUserRequestDto request);
     Task<bool> DeleteUserAsync(Guid id);
     Task<bool> ToggleUserStatusAsync(Guid id);
+    Task<(int SuccessCount, List<string> Errors)> ImportUsersFromExcelAsync(Stream excelStream);
+    Task<byte[]> ExportUsersToExcelAsync();
 }
