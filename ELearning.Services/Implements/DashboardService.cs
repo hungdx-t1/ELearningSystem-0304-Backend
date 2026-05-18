@@ -1,4 +1,6 @@
 using ELearning.Core.DTOs.Admin;
+using ELearning.Core.DTOs.Student;
+using ELearning.Core.DTOs.Course;
 using ELearning.Core.Enums;
 using ELearning.Core.Interfaces.Services;
 using ELearning.Infrastructure.Data;
@@ -6,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ELearning.Services.Implements;
 
-public class DashboardService(AppDbContext context) : IDashboardService
+public class DashboardService(AppDbContext context, ICourseService courseService) : IDashboardService
 {
     public async Task<DashboardResponseDto> GetDashboardSummaryAsync()
     {
@@ -48,5 +50,35 @@ public class DashboardService(AppDbContext context) : IDashboardService
 
         // Trả món ăn đã hoàn thiện ra ngoài
         return new DashboardResponseDto(kpis, chartData, activities);
+    }
+
+    public async Task<StudentDashboardResponseDto> GetStudentDashboardAsync(Guid studentId)
+    {
+        var allCourses = await courseService.GetAllCoursesAsync();
+
+        var myClasses = await context.ClassEnrollments
+            .Include(e => e.Class)
+            .ThenInclude(c => c.Course)
+            .Where(e => e.StudentId == studentId)
+            .Select(e => new StudentClassDto(
+                e.Class.Id,
+                e.Class.CourseId,
+                e.Class.ClassCode,
+                e.Class.ClassName,
+                e.Class.Course != null ? e.Class.Course.Title : "Chưa rõ môn",
+                e.Class.AcademicYear,
+                e.Class.GoogleMeetLink
+            ))
+            .ToListAsync();
+
+        var submissions = await context.Submissions
+            .Where(s => s.StudentId == studentId && s.IsSubmitted)
+            .ToListAsync();
+
+        int completedCount = submissions.Count;
+        var scores = submissions.Where(s => s.Score.HasValue).Select(s => s.Score!.Value).ToList();
+        float averageScore = scores.Any() ? (float)Math.Round(scores.Average(), 1) : 0f;
+
+        return new StudentDashboardResponseDto(allCourses.ToList(), myClasses, completedCount, averageScore);
     }
 }
