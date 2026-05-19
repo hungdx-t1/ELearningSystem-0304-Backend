@@ -10,8 +10,8 @@ namespace ELearning.API.Controllers;
 public class DashboardController(IDashboardService dashboardService) : ControllerBase
 {
     [HttpGet]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Lấy chi tiết dashboard (Admin)")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Truy xuất thông tin chi tiết của dashboard dành cho Quản trị viên.")]
+    [EndpointSummary("Lấy chi tiết dashboard (Admin)")]
+    [EndpointDescription("Truy xuất thông tin chi tiết của dashboard dành cho Quản trị viên.")]
     public async Task<IActionResult> GetDashboardData()
     {
         var result = await dashboardService.GetDashboardSummaryAsync();
@@ -19,8 +19,8 @@ public class DashboardController(IDashboardService dashboardService) : Controlle
     }
 
     [HttpGet("student")]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Lấy chi tiết dashboard (Học viên)")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Truy xuất thông tin thống kê và lớp học dành cho Học viên.")]
+    [EndpointSummary("Lấy chi tiết dashboard (Học viên)")]
+    [EndpointDescription("Truy xuất thông tin thống kê và lớp học dành cho Học viên.")]
     public async Task<IActionResult> GetStudentDashboardData()
     {
         Guid studentId = Guid.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);

@@ -8,59 +8,52 @@ namespace ELearning.API.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class AssignmentsController : ControllerBase
+public class AssignmentsController(IAssignmentService assignmentService) : ControllerBase
 {
-    private readonly IAssignmentService _assignmentService;
-
-    public AssignmentsController(IAssignmentService assignmentService)
-    {
-        _assignmentService = assignmentService;
-    }
-
     [HttpGet]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Lấy toàn bộ danh sách bài tập")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Truy xuất danh sách tất cả các bài tập có sẵn trong hệ thống.")]
+    [EndpointSummary("Lấy toàn bộ danh sách bài tập")]
+    [EndpointDescription("Truy xuất danh sách tất cả các bài tập có sẵn trong hệ thống.")]
     public async Task<ActionResult<IEnumerable<AssignmentResponseDto>>> GetAll()
     {
-        var assignments = await _assignmentService.GetAllAssignmentsAsync();
+        var assignments = await assignmentService.GetAllAssignmentsAsync();
         return Ok(assignments);
     }
 
     [HttpGet("{id:guid}")]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Lấy chi tiết bằng ID")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Truy xuất thông tin chi tiết của một đối tượng cụ thể thông qua ID.")]
+    [EndpointSummary("Lấy chi tiết bằng ID")]
+    [EndpointDescription("Truy xuất thông tin chi tiết của một đối tượng cụ thể thông qua ID.")]
     public async Task<ActionResult<AssignmentResponseDto>> GetById(Guid id)
     {
-        var assignment = await _assignmentService.GetAssignmentByIdAsync(id);
+        var assignment = await assignmentService.GetAssignmentByIdAsync(id);
         if (assignment == null) return NotFound(new { message = "Không tìm thấy bài tập" });
         return Ok(assignment);
     }
 
     [HttpPost]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Tạo mới bài tập")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Tạo một bài tập mới trong hệ thống.")]
+    [EndpointSummary("Tạo mới bài tập")]
+    [EndpointDescription("Tạo một bài tập mới trong hệ thống.")]
     public async Task<ActionResult<AssignmentResponseDto>> Create([FromBody] CreateAssignmentRequestDto request)
     {
-        var newAssignment = await _assignmentService.CreateAssignmentAsync(request);
+        var newAssignment = await assignmentService.CreateAssignmentAsync(request);
         return CreatedAtAction(nameof(GetById), new { id = newAssignment.Id }, newAssignment);
     }
 
     [HttpPut("{id:guid}")]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Cập nhật bài tập")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Cập nhật thông tin của một bài tập đã tồn tại.")]
+    [EndpointSummary("Cập nhật bài tập")]
+    [EndpointDescription("Cập nhật thông tin của một bài tập đã tồn tại.")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateAssignmentRequestDto request)
     {
-        var isUpdated = await _assignmentService.UpdateAssignmentAsync(id, request);
+        var isUpdated = await assignmentService.UpdateAssignmentAsync(id, request);
         if (!isUpdated) return NotFound();
         return NoContent();
     }
 
     [HttpDelete("{id:guid}")]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Xóa bài tập")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Xóa vĩnh viễn hoặc khóa một bài tập khỏi hệ thống.")]
+    [EndpointSummary("Xóa bài tập")]
+    [EndpointDescription("Xóa vĩnh viễn hoặc khóa một bài tập khỏi hệ thống.")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        var isDeleted = await _assignmentService.DeleteAssignmentAsync(id);
+        var isDeleted = await assignmentService.DeleteAssignmentAsync(id);
         if (!isDeleted) return NotFound();
         return NoContent();
     }

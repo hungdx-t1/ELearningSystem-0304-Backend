@@ -10,9 +10,14 @@ namespace ELearning.Services.Implements;
 
 public class CourseService(IGenericRepository<Course> courseRepository, AppDbContext context) : ICourseService
 {
-    public async Task<IEnumerable<CourseResponseDto>> GetAllCoursesAsync()
+    public async Task<IEnumerable<CourseResponseDto>> GetAllCoursesAsync(Guid? instructorId = null)
     {
-        var courses = await context.Courses.Include(c => c.Creator).ToListAsync();
+        var query = context.Courses.Include(c => c.Creator).AsQueryable();
+        if (instructorId.HasValue)
+        {
+            query = query.Where(c => c.CreatorId == instructorId.Value);
+        }
+        var courses = await query.ToListAsync();
         return courses.Select(c => new CourseResponseDto(
             c.Id, c.Title, c.Description, c.ThumbnailUrl, c.CreatedAt, c.CreatorId, c.Creator?.FullName, c.IsPublic
         ));
@@ -26,6 +31,30 @@ public class CourseService(IGenericRepository<Course> courseRepository, AppDbCon
         return new CourseResponseDto(
             course.Id, course.Title, course.Description, course.ThumbnailUrl, course.CreatedAt, course.CreatorId, course.Creator?.FullName, course.IsPublic
         );
+    }
+
+    public async Task<bool> IsCourseCreatorOrAdminAsync(Guid courseId, Guid userId, string role)
+    {
+        if (role == "Admin") return true;
+        var course = await context.Courses.AsNoTracking().FirstOrDefaultAsync(c => c.Id == courseId);
+        return course != null && course.CreatorId == userId;
+    }
+
+    public async Task<bool> CheckCourseAccessAsync(Guid courseId, Guid currentUserId, string currentUserRole)
+    {
+        var course = await GetCourseByIdAsync(courseId);
+        if (course == null) return false;
+
+        if (currentUserRole == "Student")
+        {
+            return await context.ClassEnrollments
+                .AnyAsync(e => e.StudentId == currentUserId && e.Class.CourseId == courseId);
+        }
+        else if (currentUserRole == "Instructor")
+        {
+            if (!course.IsPublic && course.CreatorId != currentUserId) return false;
+        }
+        return true;
     }
 
     public async Task<CourseResponseDto> CreateCourseAsync(CreateCourseRequestDto request, Guid creatorId)

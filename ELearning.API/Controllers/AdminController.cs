@@ -1,9 +1,6 @@
-using ELearning.Core.DTOs.User;
-using ELearning.Core.Enums;
 using ELearning.Core.Interfaces.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using OfficeOpenXml; // EPPlus
 
 namespace ELearning.API.Controllers;
 
@@ -13,8 +10,8 @@ namespace ELearning.API.Controllers;
 public class AdminController(IUserService userService) : ControllerBase
 {
     [HttpPost("users/import")]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Nhập dữ liệu các user từ file Excel")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Xử lý file Excel được tải lên và import dữ liệu các user vào hệ thống.")]
+    [EndpointSummary("Nhập dữ liệu các user từ file Excel")]
+    [EndpointDescription("Xử lý file Excel được tải lên và import dữ liệu các user vào hệ thống.")]
     public async Task<IActionResult> ImportUsers(IFormFile file)
     {
         if (file == null || file.Length == 0)
@@ -38,8 +35,8 @@ public class AdminController(IUserService userService) : ControllerBase
     }
 
     [HttpGet("users/export")]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Xuất dữ liệu user ra file Excel")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Xuất toàn bộ dữ liệu user ra một file Excel (.xlsx).")]
+    [EndpointSummary("Xuất dữ liệu user ra file Excel")]
+    [EndpointDescription("Xuất toàn bộ dữ liệu user ra một file Excel (.xlsx).")]
     public async Task<IActionResult> ExportUsers()
     {
         var fileBytes = await userService.ExportUsersToExcelAsync();

@@ -1,10 +1,7 @@
 using ELearning.Core.DTOs.Lesson;
-using ELearning.Core.Enums;
 using ELearning.Core.Interfaces.Services;
-using ELearning.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace ELearning.API.Controllers;
 
@@ -14,18 +11,17 @@ namespace ELearning.API.Controllers;
 public class LessonsController(ILessonService lessonService) : ControllerBase
 {
     [HttpGet("chapter/{chapterId:guid}")]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Lấy danh sách bài học của chương")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Truy xuất danh sách tất cả các bài học trong một chương cụ thể.")]
+    [EndpointSummary("Lấy danh sách bài học của chương")]
+    [EndpointDescription("Truy xuất danh sách tất cả các bài học trong một chương cụ thể.")]
     public async Task<ActionResult<IEnumerable<LessonResponseDto>>> GetLessonsByChapter(Guid chapterId)
     {
-        // Trong ILessonService bạn cần viết thêm hàm GetByChapterIdAsync
         var lessons = await lessonService.GetLessonsByChapterIdAsync(chapterId);
         return Ok(lessons);
     }
 
     [HttpGet("{id:guid}")]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Lấy chi tiết bài học bằng ID")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Truy xuất thông tin chi tiết của một bài học cụ thể thông qua ID.")]
+    [EndpointSummary("Lấy chi tiết bài học bằng ID")]
+    [EndpointDescription("Truy xuất thông tin chi tiết của một bài học cụ thể thông qua ID.")]
     public async Task<ActionResult<LessonResponseDto>> GetById(Guid id)
     {
         var lesson = await lessonService.GetLessonByIdAsync(id);
@@ -35,8 +31,8 @@ public class LessonsController(ILessonService lessonService) : ControllerBase
 
     // Tạo bài học mới (Video Youtube, PDF, v.v.)
     [HttpPost]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Tạo mới bài học")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Tạo một bài học mới trong hệ thống.")]
+    [EndpointSummary("Tạo mới bài học")]
+    [EndpointDescription("Tạo một bài học mới trong hệ thống.")]
     public async Task<ActionResult<LessonResponseDto>> Create([FromBody] CreateLessonRequestDto request)
     {
         try
@@ -52,8 +48,8 @@ public class LessonsController(ILessonService lessonService) : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Cập nhật bài học")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Cập nhật thông tin của một bài học cụ thể.")]
+    [EndpointSummary("Cập nhật bài học")]
+    [EndpointDescription("Cập nhật thông tin của một bài học cụ thể.")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateLessonRequestDto request)
     {
         try
@@ -70,8 +66,8 @@ public class LessonsController(ILessonService lessonService) : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Xóa bài học")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Xóa vĩnh viễn hoặc khóa một bài học khỏi hệ thống.")]
+    [EndpointSummary("Xóa bài học")]
+    [EndpointDescription("Xóa vĩnh viễn hoặc khóa một bài học khỏi hệ thống.")]
     public async Task<IActionResult> Delete(Guid id)
     {
         var isDeleted = await lessonService.DeleteLessonAsync(id);
@@ -80,8 +76,8 @@ public class LessonsController(ILessonService lessonService) : ControllerBase
     }
 
     [HttpPut("update-order")]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Cập nhật thứ tự bài học")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Cập nhật thứ tự của các bài học trong một chương.")]
+    [EndpointSummary("Cập nhật thứ tự bài học")]
+    [EndpointDescription("Cập nhật thứ tự của các bài học trong một chương.")]
     public async Task<IActionResult> UpdateOrder([FromBody] IEnumerable<UpdateLessonOrderDto> request)
     {
         var result = await lessonService.UpdateLessonOrdersAsync(request);

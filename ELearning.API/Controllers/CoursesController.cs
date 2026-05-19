@@ -3,7 +3,6 @@ using ELearning.Core.Interfaces.Services;
 using ELearning.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace ELearning.API.Controllers;
@@ -11,76 +10,65 @@ namespace ELearning.API.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class CoursesController(ICourseService courseService, AppDbContext context) : ControllerBase
+public class CoursesController(ICourseService courseService) : ControllerBase
 {
     private readonly ICourseService _courseService = courseService;
-    private readonly AppDbContext _context = context;
 
     private async Task<bool> IsCourseCreatorOrAdmin(Guid courseId)
     {
         var role = User.FindFirstValue(ClaimTypes.Role);
-        if (role == "Admin") return true;
-
         var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (!Guid.TryParse(userIdStr, out Guid userId)) return false;
 
-        var course = await _context.Courses.AsNoTracking().FirstOrDefaultAsync(c => c.Id == courseId);
-        return course != null && course.CreatorId == userId;
+        return await _courseService.IsCourseCreatorOrAdminAsync(courseId, userId, role ?? "");
     }
 
     [HttpGet]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Lấy danh sách khóa học")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Truy xuất danh sách tất cả các khóa học có sẵn trong hệ thống.")]
+    [EndpointSummary("Lấy danh sách khóa học")]
+    [EndpointDescription("Truy xuất danh sách tất cả các khóa học có sẵn trong hệ thống.")]
     public async Task<ActionResult<IEnumerable<CourseResponseDto>>> GetAll()
     {
-        var courses = await _courseService.GetAllCoursesAsync();
-
         var role = User.FindFirstValue(ClaimTypes.Role);
+        Guid? instructorId = null;
+
         if (role == "Instructor")
         {
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (Guid.TryParse(userIdStr, out Guid userId))
             {
-                // Chỉ lấy khóa học do chính giảng viên này tạo
-                courses = courses.Where(c => c.CreatorId == userId).ToList();
+                instructorId = userId;
             }
         }
+
+        var courses = await _courseService.GetAllCoursesAsync(instructorId);
         return Ok(courses);
     }
 
     [HttpGet("{id:guid}")]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Lấy chi tiết khóa học bằng ID")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Truy xuất thông tin chi tiết của một khóa học cụ thể thông qua ID.")]
-    public async Task<ActionResult<CourseResponseDto>> GetById(Guid id, [FromServices] AppDbContext context)
+    [EndpointSummary("Lấy chi tiết khóa học bằng ID")]
+    [EndpointDescription("Truy xuất thông tin chi tiết của một khóa học cụ thể thông qua ID.")]
+    public async Task<ActionResult<CourseResponseDto>> GetById(Guid id)
     {
         var course = await _courseService.GetCourseByIdAsync(id);
         if (course == null) return NotFound(new { message = "Không tìm thấy khóa học" });
 
         var currentUserIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        var currentUserRole = User.FindFirstValue(ClaimTypes.Role);
+        var currentUserRole = User.FindFirstValue(ClaimTypes.Role) ?? "";
 
         if (Guid.TryParse(currentUserIdStr, out Guid currentUserId))
         {
-            if (currentUserRole == "Student")
-            {
-                var isEnrolledInCourse = await context.ClassEnrollments
-                    .AnyAsync(e => e.StudentId == currentUserId && e.Class.CourseId == id);
-                if (!isEnrolledInCourse) return Forbid();
-            }
-            else if (currentUserRole == "Instructor")
-            {
-                // Giảng viên được xem nếu khóa học là Public HOẶC là khóa do mình tạo
-                if (!course.IsPublic && course.CreatorId != currentUserId)
-                    return Forbid();
-            }
+            if (currentUserRole == "Admin") return Ok(course);
+
+            var hasAccess = await _courseService.CheckCourseAccessAsync(id, currentUserId, currentUserRole);
+            if (!hasAccess) return Forbid();
         }
         return Ok(course);
     }
 
     [HttpPost]
     [Authorize(Roles = "Instructor, Admin")]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Tạo mới khóa học")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Tạo một khóa học mới trong hệ thống.")]
+    [EndpointSummary("Tạo mới khóa học")]
+    [EndpointDescription("Tạo một khóa học mới trong hệ thống.")]
     public async Task<ActionResult<CourseResponseDto>> Create([FromBody] CreateCourseRequestDto request)
     {
         var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -96,8 +84,8 @@ public class CoursesController(ICourseService courseService, AppDbContext contex
 
     [HttpPost("{id:guid}/copy")]
     [Authorize(Roles = "Instructor, Admin")]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Nhân bản khóa học")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Nhân bản một khóa học đã tồn tại.")]
+    [EndpointSummary("Nhân bản khóa học")]
+    [EndpointDescription("Nhân bản một khóa học đã tồn tại.")]
     public async Task<IActionResult> Copy(Guid id)
     {
         var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -115,8 +103,8 @@ public class CoursesController(ICourseService courseService, AppDbContext contex
     }
 
     [HttpPut("{id:guid}")]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Cập nhật khóa học")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Cập nhật thông tin của một khóa học đã tồn tại.")]
+    [EndpointSummary("Cập nhật khóa học")]
+    [EndpointDescription("Cập nhật thông tin của một khóa học đã tồn tại.")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateCourseRequestDto request)
     {
         if (!await IsCourseCreatorOrAdmin(id)) return Forbid();
@@ -127,8 +115,8 @@ public class CoursesController(ICourseService courseService, AppDbContext contex
     }
 
     [HttpDelete("{id:guid}")]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Xóa khóa học")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Xóa vĩnh viễn hoặc khóa một khóa học khỏi hệ thống.")]
+    [EndpointSummary("Xóa khóa học")]
+    [EndpointDescription("Xóa vĩnh viễn hoặc khóa một khóa học khỏi hệ thống.")]
     public async Task<IActionResult> Delete(Guid id)
     {
         if (!await IsCourseCreatorOrAdmin(id)) return Forbid();
@@ -139,8 +127,8 @@ public class CoursesController(ICourseService courseService, AppDbContext contex
     }
 
     [HttpGet("{id:guid}/assignments")]
-    [Microsoft.AspNetCore.Http.EndpointSummary("Lấy danh sách bài tập của khóa học")]
-    [Microsoft.AspNetCore.Http.EndpointDescription("Truy xuất danh sách các bài tập tự luận của một khóa học.")]
+    [EndpointSummary("Lấy danh sách bài tập của khóa học")]
+    [EndpointDescription("Truy xuất danh sách các bài tập tự luận của một khóa học.")]
     public async Task<IActionResult> GetAssignmentsByCourse(Guid id)
     {
         if (!await IsCourseCreatorOrAdmin(id)) return Forbid();
