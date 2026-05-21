@@ -1,3 +1,5 @@
+using Pgvector;
+
 namespace ELearning.Core.Entities;
 
 public class AiChatLog
@@ -9,4 +11,7 @@ public class AiChatLog
     public string Message { get; set; } = string.Empty;
     public string Response { get; set; } = string.Empty;
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+
+    public Vector? Embedding { get; set; }
+
 }

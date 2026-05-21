@@ -33,7 +33,7 @@ builder.Services.AddCors(options =>
 // Cấu hình Database
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(connectionString));
+    options.UseNpgsql(connectionString, o => o.UseVector()));
 
 builder.Services.AddHttpClient(); // Cho phép dùng HttpClient
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));

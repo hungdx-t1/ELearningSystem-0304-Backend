@@ -24,6 +24,9 @@ public class AppDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
+        // Kích hoạt pgvector
+        modelBuilder.HasPostgresExtension("vector");
+
         // 1. Ánh xạ Enum vào PostgreSQL
         modelBuilder.HasPostgresEnum<UserRole>();
         modelBuilder.HasPostgresEnum<LessonType>();
