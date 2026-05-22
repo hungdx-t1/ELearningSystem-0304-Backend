@@ -1,0 +1,22 @@
+Mình vừa dùng lệnh kiểm tra chui thẳng vào trong container Docker postgres-vector của bạn, và mình có thể khẳng định 100% extension vector đã có mặt bên trong Docker.
+
+Vậy tại sao bạn gõ lệnh trên psql lại vẫn bị báo lỗi? Bí mật nằm ở dòng ELearningDB=# trong log của bạn! Khi bạn gõ psql, nó đã kết nối nhầm vào cái PostgreSQL mặc định cài trên Windows của bạn (vì nó kết nối được thẳng vào database ELearningDB mà bạn đã xài từ trước). Trong khi đó, cái Docker postgres-vector bạn vừa tạo ra là một môi trường hoàn toàn mới tinh, trống trơn, chưa hề có database nào tên là ELearningDB cả!
+
+Hai cái Postgres (1 cái trên Windows, 1 cái trong Docker) đang bị "đụng" cổng 5432 với nhau nên máy tính của bạn bị nhầm lẫn.
+
+Cách xử lý triệt để nhất (Đổi cổng Docker)
+Để tránh đụng chạm với bản Postgres cũ trên máy, mình khuyên bạn hãy cho cái Docker chạy ở một cổng khác (ví dụ 5433).
+
+Bước 1: Xóa cái container cũ bị đụng cổng đi
+
+bash
+docker rm -f postgres-vector
+Bước 2: Tạo lại container mới ở cổng 5433
+
+bash
+docker run -d --name postgres-vector -e POSTGRES_PASSWORD=mysecretpassword -p 5433:5432 pgvector/pgvector:pg18
+Bước 3: Đổi cấu hình appsettings.json Bạn mở file appsettings.json của Backend lên, tìm chuỗi kết nối Database (DefaultConnection) và sửa lại thông số Port thành 5433 và pass là mysecretpassword. Ví dụ: Host=localhost;Port=5433;Database=ELearningDB;Username=postgres;Password=mysecretpassword
+
+Bước 4: Khởi động lại Backend API Đừng dùng psql thủ công nữa, bạn cứ mở terminal chạy dotnet run con API. Code .NET (nhờ cái lệnh Migrate có sẵn trong Program.cs) sẽ tự động kết nối vào Docker ở cổng 5433, tự động tạo ra database ELearningDB mới tinh, tự chạy các bảng dữ liệu, và tự động kích hoạt luôn extension vector (nhờ dòng code mình đã thêm vào hôm trước).
+
+Bạn làm thử xem có mượt mà không nhé!
