@@ -1,13 +1,16 @@
+using ELearning.Core.Interfaces;
+using ELearning.Core.Entities;
 using ELearning.Core.Interfaces.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace ELearning.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class AiController(IAiService aiService) : ControllerBase
+public class AiController(IAiService aiService, IAiChatService aiChatService, IGenericRepository<User> userRepo) : ControllerBase
 {
     [HttpPost("chat")]
     [EndpointSummary("Tương tác AI Chat")]
@@ -17,7 +20,23 @@ public class AiController(IAiService aiService) : ControllerBase
         if (string.IsNullOrWhiteSpace(prompt))
             return BadRequest(new { message = "Câu hỏi không được để trống" });
 
-        var reply = await aiService.ChatWithAiAsync(prompt, lessonIds, file);
+        var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        string? similarContext = null;
+        string? userName = null;
+
+        if (Guid.TryParse(userIdString, out var userId))
+        {
+            var user = await userRepo.GetByIdAsync(userId);
+            userName = user?.FullName;
+
+            var similarChats = await aiChatService.FindSimilarChatsAsync(userId, prompt, 3);
+            if (similarChats.Any())
+            {
+                similarContext = string.Join("\n\n", similarChats.Select(c => $"Học viên: {c.Message}\nTrợ lý AI: {c.Response}"));
+            }
+        }
+
+        var reply = await aiService.ChatWithAiAsync(prompt, lessonIds, file, similarContext, userName);
         return Ok(new { reply });
     }
 

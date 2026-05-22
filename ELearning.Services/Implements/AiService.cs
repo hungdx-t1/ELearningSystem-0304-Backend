@@ -10,7 +10,36 @@ namespace ELearning.Services.Implements;
 
 public class AiService(HttpClient httpClient, IConfiguration config, AppDbContext context) : IAiService
 {
-    public async Task<string> ChatWithAiAsync(string userMessage, List<Guid>? lessonIds, IFormFile? file = null)
+    public async Task<Pgvector.Vector> GenerateEmbeddingAsync(string text)
+    {
+        var apiKey = config["GeminiAI:ApiKey"];
+        var embedUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent?key={apiKey}";
+
+        var requestBody = new
+        {
+            model = "models/gemini-embedding-001",
+            content = new
+            {
+                parts = new[] { new { text = text } }
+            }
+        };
+
+        var jsonContent = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
+        var response = await httpClient.PostAsync(embedUrl, jsonContent);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            return new Pgvector.Vector(new float[768]);
+        }
+
+        var responseString = await response.Content.ReadAsStringAsync();
+        using var jsonDocument = JsonDocument.Parse(responseString);
+        var values = jsonDocument.RootElement.GetProperty("embedding").GetProperty("values").EnumerateArray().Select(x => x.GetSingle()).ToArray();
+        
+        return new Pgvector.Vector(values);
+    }
+
+    public async Task<string> ChatWithAiAsync(string userMessage, List<Guid>? lessonIds, IFormFile? file = null, string? similarContext = null, string? userName = null)
     {
         var apiKey = config["GeminiAI:ApiKey"];
         var geminiUrl = $"{config["GeminiAI:Url"]}?key={apiKey}";
@@ -21,6 +50,11 @@ public class AiService(HttpClient httpClient, IConfiguration config, AppDbContex
         string systemInstructionText = "Bạn là một trợ lý ảo giáo dục trên hệ thống LMS. Nhiệm vụ của bạn là giải đáp thắc mắc liên quan đến học thuật. TỪ CHỐI mọi câu hỏi ngoài luồng.";
 
         bool hasContext = false; // có cung cấp tài liệu (context) hay không
+
+        if (!string.IsNullOrWhiteSpace(similarContext))
+        {
+            hasContext = true;
+        }
 
         // nếu có file từ người dùng có tự upload file đính kèm
         if (file != null && file.Length > 0)
@@ -69,8 +103,18 @@ public class AiService(HttpClient httpClient, IConfiguration config, AppDbContex
         {
             systemInstructionText = @"Bạn là trợ lý ảo giải đáp bài giảng. 
                 QUY TẮC TỐI THƯỢNG: 
-                1. Ưu tiên sử dụng thông tin có trong các tài liệu đính kèm để trả lời.
-                2. Nếu thông tin không có trong tài liệu, bạn có thể dùng kiến thức bên ngoài nhưng phải nói rõ: 'Theo tài liệu thì không đề cập, nhưng theo kiến thức chung thì...'";
+                1. Ưu tiên sử dụng thông tin có trong các tài liệu đính kèm hoặc lịch sử chat trước đó (nếu có) để trả lời.
+                2. Nếu thông tin không có trong tài liệu/lịch sử, bạn có thể dùng kiến thức bên ngoài nhưng phải nói rõ: 'Theo tài liệu thì không đề cập, nhưng theo kiến thức chung thì...'";
+
+            if (!string.IsNullOrWhiteSpace(similarContext))
+            {
+                systemInstructionText += $"\n\nLỊCH SỬ CHAT TRƯỚC ĐÓ CỦA HỌC VIÊN:\n{similarContext}";
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(userName))
+        {
+            systemInstructionText = $"Người đang nói chuyện với bạn là một học viên có tên: {userName}. Bạn hãy xưng hô thân thiện bằng tên của họ trong câu trả lời nhé.\n\n" + systemInstructionText;
         }
 
         // Đóng gói tất cả vào request
