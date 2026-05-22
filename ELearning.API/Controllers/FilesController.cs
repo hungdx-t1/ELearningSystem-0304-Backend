@@ -16,6 +16,12 @@ public class FilesController(ICloudinaryService cloudinaryService) : ControllerB
     {
         if (file == null || file.Length == 0) return BadRequest("File rỗng!");
 
+        var extension = Path.GetExtension(file.FileName).ToLower();
+        if (extension == ".txt" || extension == ".exe" || extension == ".bat")
+        {
+            return BadRequest("Định dạng file này không được hỗ trợ!");
+        }
+
         try
         {
             var fileUrl = await cloudinaryService.UploadFileAsync(file);
