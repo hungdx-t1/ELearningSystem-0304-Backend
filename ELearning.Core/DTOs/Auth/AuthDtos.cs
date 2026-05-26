@@ -15,3 +15,6 @@ public record RegisterRequestDto(
     string FullName, 
     UserRole Role = UserRole.Student // Sửa string thành UserRole
 );
+
+public record RequestChangePasswordDto(string OldPassword);
+public record ConfirmChangePasswordDto(string NewPassword, string OtpCode);

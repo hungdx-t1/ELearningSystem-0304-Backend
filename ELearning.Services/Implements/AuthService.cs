@@ -1,4 +1,4 @@
-﻿using ELearning.Core.DTOs.Auth;
+using ELearning.Core.DTOs.Auth;
 using ELearning.Core.DTOs.User;
 using ELearning.Core.Entities;
 using ELearning.Core.Interfaces;
@@ -151,6 +151,45 @@ public class AuthService(IGenericRepository<User> userRepository, IConfiguration
         // Tiến hành cập nhật email mới
         user.Email = user.PendingNewEmail;
         user.PendingNewEmail = null;
+        user.OtpCode = null;
+        user.OtpExpiryTime = null;
+
+        userRepository.Update(user);
+        return await userRepository.SaveChangesAsync();
+    }
+
+    public async Task<bool> RequestChangePasswordAsync(RequestChangePasswordDto dto, Guid userId)
+    {
+        var user = await userRepository.GetByIdAsync(userId);
+        if (user == null || !BCrypt.Net.BCrypt.Verify(dto.OldPassword, user.PasswordHash))
+            return false; // Sai mật khẩu cũ hoặc không tìm thấy user
+
+        var otp = new Random().Next(100000, 999999).ToString();
+        user.OtpCode = otp;
+        user.OtpExpiryTime = DateTime.UtcNow.AddMinutes(5);
+
+        userRepository.Update(user);
+        await userRepository.SaveChangesAsync();
+
+        var body = $@"
+            <h3>Xác thực Đổi Mật Khẩu LMS</h3>
+            <p>Bạn đã yêu cầu đổi mật khẩu. Mã OTP của bạn là: <strong>{otp}</strong></p>
+            <p>Mã này có hiệu lực trong vòng 5 phút.</p>";
+
+        await emailService.SendEmailAsync(user.Email, "LMS OTP Đổi Mật Khẩu", body);
+        return true;
+    }
+
+    public async Task<bool> ConfirmChangePasswordAsync(ConfirmChangePasswordDto dto, Guid userId)
+    {
+        var user = await userRepository.GetByIdAsync(userId);
+        if (user == null) return false;
+
+        if (user.OtpCode != dto.OtpCode || DateTime.UtcNow > user.OtpExpiryTime)
+            return false;
+
+        // Tiến hành cập nhật mật khẩu mới
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
         user.OtpCode = null;
         user.OtpExpiryTime = null;
 

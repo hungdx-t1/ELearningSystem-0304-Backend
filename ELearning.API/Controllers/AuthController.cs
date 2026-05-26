@@ -86,4 +86,34 @@ public class AuthController(IAuthService authService) : ControllerBase
 
         return Ok(new { message = "Đổi email thành công. Vui lòng dùng email mới ở lần đăng nhập tiếp theo." });
     }
+
+    [Authorize]
+    [HttpPost("request-change-password")]
+    [EndpointSummary("Yêu cầu đổi mật khẩu")]
+    [EndpointDescription("Xác thực mật khẩu cũ và gửi OTP xác nhận đổi mật khẩu về email.")]
+    public async Task<IActionResult> RequestChangePassword([FromBody] RequestChangePasswordDto request)
+    {
+        var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userIdString, out Guid userId)) return Unauthorized();
+
+        var isSuccess = await authService.RequestChangePasswordAsync(request, userId);
+        if (!isSuccess) return BadRequest(new { message = "Mật khẩu cũ không chính xác." });
+
+        return Ok(new { message = "Mã OTP đã được gửi đến email của bạn. Vui lòng kiểm tra hộp thư." });
+    }
+
+    [Authorize]
+    [HttpPost("confirm-change-password")]
+    [EndpointSummary("Xác nhận đổi mật khẩu")]
+    [EndpointDescription("Xác nhận OTP và tiến hành đổi sang mật khẩu mới.")]
+    public async Task<IActionResult> ConfirmChangePassword([FromBody] ConfirmChangePasswordDto request)
+    {
+        var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userIdString, out Guid userId)) return Unauthorized();
+
+        var isSuccess = await authService.ConfirmChangePasswordAsync(request, userId);
+        if (!isSuccess) return BadRequest(new { message = "Mã OTP không chính xác hoặc đã hết hạn!" });
+
+        return Ok(new { message = "Đổi mật khẩu thành công." });
+    }
 }
