@@ -3,15 +3,16 @@ using ELearning.Core.Entities;
 using ELearning.Core.Interfaces.Services;
 using ELearning.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using ELearning.Core.Interfaces;
 
 namespace ELearning.Services.Implements;
 
-public class ClassLessonScheduleService(AppDbContext context) : IClassLessonScheduleService
+public class ClassLessonScheduleService(IGenericRepository<ClassLessonSchedule> scheduleRepo) : IClassLessonScheduleService
 {
     public async Task<ClassLessonScheduleResponseDto?> GetScheduleAsync(Guid classId, Guid lessonId)
     {
-        var schedule = await context.ClassLessonSchedules
-            .FirstOrDefaultAsync(s => s.ClassId == classId && s.LessonId == lessonId);
+        var schedules = await scheduleRepo.FindAsync(s => s.ClassId == classId && s.LessonId == lessonId);
+        var schedule = schedules.FirstOrDefault();
 
         if (schedule == null) return null;
 
@@ -20,8 +21,8 @@ public class ClassLessonScheduleService(AppDbContext context) : IClassLessonSche
 
     public async Task<ClassLessonScheduleResponseDto> UpsertScheduleAsync(Guid classId, Guid lessonId, UpsertClassLessonScheduleRequestDto request)
     {
-        var schedule = await context.ClassLessonSchedules
-            .FirstOrDefaultAsync(s => s.ClassId == classId && s.LessonId == lessonId);
+        var schedules = await scheduleRepo.FindAsync(s => s.ClassId == classId && s.LessonId == lessonId);
+        var schedule = schedules.FirstOrDefault();
 
         if (schedule == null)
         {
@@ -33,16 +34,17 @@ public class ClassLessonScheduleService(AppDbContext context) : IClassLessonSche
                 DueDate = request.DueDate,
                 OverrideDuration = request.OverrideDuration
             };
-            context.ClassLessonSchedules.Add(schedule);
+            await scheduleRepo.AddAsync(schedule);
         }
         else
         {
             schedule.StartTime = request.StartTime;
             schedule.DueDate = request.DueDate;
             schedule.OverrideDuration = request.OverrideDuration;
+            scheduleRepo.Update(schedule);
         }
 
-        await context.SaveChangesAsync();
+        await scheduleRepo.SaveChangesAsync();
 
         return new ClassLessonScheduleResponseDto(schedule.ClassId, schedule.LessonId, schedule.StartTime, schedule.DueDate, schedule.OverrideDuration);
     }

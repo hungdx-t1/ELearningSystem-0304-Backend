@@ -24,13 +24,16 @@ public class AppDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        // Kích hoạt pgvector
-        modelBuilder.HasPostgresExtension("vector");
-
-        // 1. Ánh xạ Enum vào PostgreSQL
-        modelBuilder.HasPostgresEnum<UserRole>();
-        modelBuilder.HasPostgresEnum<LessonType>();
-        modelBuilder.HasPostgresEnum<VideoProvider>();
+        // Kích hoạt pgvector và ánh xạ Enum chỉ khi dùng PostgreSQL
+        if (Database.ProviderName == "Npgsql.EntityFrameworkCore.PostgreSQL")
+        {
+            modelBuilder.HasPostgresExtension("vector");
+            
+            // 1. Ánh xạ Enum vào PostgreSQL
+            modelBuilder.HasPostgresEnum<UserRole>();
+            modelBuilder.HasPostgresEnum<LessonType>();
+            modelBuilder.HasPostgresEnum<VideoProvider>();
+        }
 
         // 2. Cấu hình bảng Users
         modelBuilder.Entity<User>(entity =>
