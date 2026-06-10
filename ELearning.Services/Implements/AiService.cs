@@ -35,7 +35,7 @@ public class AiService(HttpClient httpClient, IConfiguration config, AppDbContex
         var responseString = await response.Content.ReadAsStringAsync();
         using var jsonDocument = JsonDocument.Parse(responseString);
         var values = jsonDocument.RootElement.GetProperty("embedding").GetProperty("values").EnumerateArray().Select(x => x.GetSingle()).ToArray();
-        
+
         return new Pgvector.Vector(values);
     }
 
@@ -98,7 +98,7 @@ public class AiService(HttpClient httpClient, IConfiguration config, AppDbContex
             }
         }
 
-        // Cập nhật Vòng Kim Cô (System Instruction) nếu có dính dáng tới TÀI LIỆU
+        // prompt nếu có dính dáng tới TÀI LIỆU
         if (hasContext)
         {
             systemInstructionText = @"Bạn là trợ lý ảo giải đáp bài giảng. 

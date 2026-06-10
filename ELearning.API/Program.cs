@@ -22,7 +22,8 @@ builder.Services.AddCors(options =>
         policy.WithOrigins(
             "http://localhost:4200",
             "https://e-learning-system-0304-frontend.vercel.app",
-            "https://e-learning-system-0304-frontend-rel.vercel.app"
+            "https://e-learning-system-0304-frontend-rel.vercel.app",
+            "https://webdn.bananaworld.io.vn"
               )
               .AllowAnyHeader()
               .AllowAnyMethod()
