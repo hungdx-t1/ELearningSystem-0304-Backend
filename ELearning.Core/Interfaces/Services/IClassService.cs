@@ -14,6 +14,7 @@ public interface IClassService
     Task<bool> DeleteClassAsync(Guid id);
     Task<ClassDetailsResponseDto?> GetClassDetailsAsync(Guid classId, Guid currentUserId, string currentUserRole);
     Task<IEnumerable<StudentClassResponseDto>> GetClassesByStudentAsync(Guid studentId);
+    Task<int> GetStudentCountAsync(Guid classId);
     Task<(int AddedCount, List<string> Errors)> ImportStudentsFromExcelAsync(Guid classId, IFormFile file);
     Task<bool> RemoveStudentFromClassAsync(Guid classId, Guid studentId);
 }

@@ -26,19 +26,19 @@ public class ClassService(IGenericRepository<Class> classRepo, IGenericRepositor
             query = query.Where(c => c.InstructorId == instructorId.Value);
         }
 
-        var classes = await query.ToListAsync();
-
-        // Cập nhật DTO: Bơm thêm CourseId và InstructorId (Lưu ý: InstructorId giờ có thể null nếu GV bị xóa)
-        return classes.Select(c => new ClassResponseDto(
-            c.Id,
-            c.CourseId,
-            c.ClassCode,
-            c.ClassName,
-            c.InstructorId ?? Guid.Empty, // Tránh lỗi null nếu GV đã nghỉ việc
-            c.GoogleMeetLink,
-            c.AcademicYear,
-            c.Description
-        ));
+        return await query
+            .Select(c => new ClassResponseDto(
+                c.Id,
+                c.CourseId,
+                c.ClassCode,
+                c.ClassName,
+                c.InstructorId ?? Guid.Empty, // Tránh lỗi null nếu GV đã nghỉ việc
+                c.GoogleMeetLink,
+                c.AcademicYear,
+                c.Description,
+                c.Enrollments.Count
+            ))
+            .ToListAsync();
     }
 
     public async Task<ClassResponseDto> CreateClassAsync(CreateClassRequestDto request)
@@ -72,7 +72,8 @@ public class ClassService(IGenericRepository<Class> classRepo, IGenericRepositor
             newClass.InstructorId ?? Guid.Empty,
             newClass.GoogleMeetLink,
             newClass.AcademicYear,
-            newClass.Description
+            newClass.Description,
+            0
         );
     }
 
@@ -190,6 +191,14 @@ public class ClassService(IGenericRepository<Class> classRepo, IGenericRepositor
                 e.Class.GoogleMeetLink
             ))
             .ToListAsync();
+    }
+
+    public async Task<int> GetStudentCountAsync(Guid classId)
+    {
+        var classExists = await context.Classes.AnyAsync(c => c.Id == classId);
+        if (!classExists) throw new KeyNotFoundException("Không tìm thấy lớp học.");
+
+        return await context.ClassEnrollments.CountAsync(e => e.ClassId == classId);
     }
 
     public async Task<(int AddedCount, List<string> Errors)> ImportStudentsFromExcelAsync(Guid classId, IFormFile file)

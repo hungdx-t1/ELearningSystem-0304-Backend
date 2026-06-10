@@ -177,6 +177,22 @@ public class ClassesController(IClassService classService) : ControllerBase
         return Ok(classes);
     }
 
+    [HttpGet("{id:guid}/student-count")]
+    [EndpointSummary("Đếm số lượng sinh viên trong lớp")]
+    [EndpointDescription("Trả về số lượng sinh viên hiện tại đang ghi danh trong lớp học.")]
+    public async Task<IActionResult> GetStudentCount(Guid id)
+    {
+        try
+        {
+            var count = await _classService.GetStudentCountAsync(id);
+            return Ok(count);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+    }
+
     // API IMPORT EXCEL CHO LỚP HỌC
     [HttpPost("{id:guid}/import-students")]
     [EndpointSummary("Nhập danh sách sinh viên từ file Excel")]

@@ -8,7 +8,8 @@ public record ClassResponseDto(
     Guid InstructorId,
     string? GoogleMeetLink,
     string? AcademicYear,
-    string? Description
+    string? Description,
+    int Students = 0
 );
 
 public record CreateClassRequestDto(
