@@ -15,6 +15,17 @@ public class AiChatService(IGenericRepository<AiChatLog> logRepo, IAiService aiS
         return logs.OrderBy(l => l.Timestamp).Select(l => new AiChatLogDto(l.Id, l.UserId, l.Message, l.Response, l.Timestamp));
     }
 
+    public async Task<IEnumerable<AiChatLogDto>> GetRecentChatsAsync(Guid userId, int limit = 6)
+    {
+        var logs = await context.AiChatLogs
+            .Where(l => l.UserId == userId)
+            .OrderByDescending(l => l.Timestamp)
+            .Take(limit)
+            .ToListAsync();
+
+        return logs.OrderBy(l => l.Timestamp).Select(l => new AiChatLogDto(l.Id, l.UserId, l.Message, l.Response, l.Timestamp));
+    }
+
     public async Task<IEnumerable<AiChatLogDto>> FindSimilarChatsAsync(Guid userId, string prompt, int limit = 3)
     {
         var promptVector = await aiService.GenerateEmbeddingAsync(prompt);

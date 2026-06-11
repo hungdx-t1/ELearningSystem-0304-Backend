@@ -29,10 +29,34 @@ public class AiController(IAiService aiService, IAiChatService aiChatService, IG
             var user = await userRepo.GetByIdAsync(userId);
             userName = user?.FullName;
 
-            var similarChats = await aiChatService.FindSimilarChatsAsync(userId, prompt, 3);
-            if (similarChats.Any())
+            var historyLines = new List<string>();
+
+            // 1. Lấy 5 cuộc trò chuyện gần nhất (theo thời gian) làm ngữ cảnh liền mạch
+            var recentChats = await aiChatService.GetRecentChatsAsync(userId, 5);
+            if (recentChats.Any())
             {
-                similarContext = string.Join("\n\n", similarChats.Select(c => $"Học viên: {c.Message}\nTrợ lý AI: {c.Response}"));
+                historyLines.Add("--- BỐI CẢNH HỘI THOẠI GẦN ĐÂY CỦA HỌC VIÊN ---");
+                foreach (var c in recentChats)
+                {
+                    historyLines.Add($"Học viên: {c.Message}\nTrợ lý AI: {c.Response}");
+                }
+            }
+
+            // 2. Lấy thêm các đoạn tương tự (Vector Search) nếu có và không trùng với 5 đoạn trên
+            var similarChats = await aiChatService.FindSimilarChatsAsync(userId, prompt, 3);
+            var filteredSimilar = similarChats.Where(sc => !recentChats.Any(rc => rc.Id == sc.Id));
+            if (filteredSimilar.Any())
+            {
+                historyLines.Add("\n--- THÔNG TIN LIÊN QUAN TỪ CÁC CUỘC HỘI THOẠI TRƯỚC ĐÓ ---");
+                foreach (var c in filteredSimilar)
+                {
+                    historyLines.Add($"Học viên: {c.Message}\nTrợ lý AI: {c.Response}");
+                }
+            }
+
+            if (historyLines.Any())
+            {
+                similarContext = string.Join("\n\n", historyLines);
             }
         }
 

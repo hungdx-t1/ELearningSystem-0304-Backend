@@ -47,7 +47,13 @@ public class AiService(HttpClient httpClient, IConfiguration config, AppDbContex
         // Rổ chứa dữ liệu gửi lên Gemini (bắt đầu bằng câu hỏi text của user)
         var parts = new List<object> { new { text = userMessage } };
 
-        string systemInstructionText = "Bạn là một trợ lý ảo giáo dục trên hệ thống LMS. Nhiệm vụ của bạn là giải đáp thắc mắc liên quan đến học thuật. TỪ CHỐI mọi câu hỏi ngoài luồng.";
+        string systemInstructionText = @"Bạn là một trợ lý ảo giáo dục (AI Assistant) trên hệ thống LMS học tập.
+            Nhiệm vụ chính của bạn là giải đáp các thắc mắc học thuật liên quan đến kiến thức các môn học trên hệ thống (bao gồm Hệ quản trị CSDL, Công nghệ thông tin, lập trình, Toán học, Tiếng Anh học thuật/ngữ pháp, và các môn đại cương khác) hoặc nội dung tài liệu đính kèm được cung cấp.
+
+            QUY TẮC BẮT BUỘC:
+            1. Chỉ trả lời các câu hỏi liên quan đến nội dung học tập, kiến thức các môn học (bao gồm cả Tiếng Anh ngữ pháp/từ vựng, Toán, lập trình...) hoặc tài liệu được cung cấp.
+            2. Tuyệt đối TỪ CHỐI trả lời mọi câu hỏi không liên quan đến học tập hoặc ngoài luồng giải trí/đời sống (ví dụ: bóng đá, thể thao, Messi/Ronaldo, đời tư ca sĩ, diễn viên, phim ảnh, âm nhạc giải trí, thời tiết, các câu hỏi tán gẫu cuộc sống thường ngày không học thuật...).
+            3. Nếu người dùng đặt câu hỏi ngoài luồng, hãy từ chối lịch sự bằng câu sau: 'Xin lỗi, mình chỉ hỗ trợ giải đáp các thắc mắc liên quan đến học thuật, nội dung học tập và tài liệu môn học. Bạn vui lòng đặt câu hỏi liên quan đến bài học nhé!'";
 
         bool hasContext = false; // có cung cấp tài liệu (context) hay không
 
@@ -101,10 +107,12 @@ public class AiService(HttpClient httpClient, IConfiguration config, AppDbContex
         // prompt nếu có dính dáng tới TÀI LIỆU
         if (hasContext)
         {
-            systemInstructionText = @"Bạn là trợ lý ảo giải đáp bài giảng. 
-                QUY TẮC TỐI THƯỢNG: 
-                1. Ưu tiên sử dụng thông tin có trong các tài liệu đính kèm hoặc lịch sử chat trước đó (nếu có) để trả lời.
-                2. Nếu thông tin không có trong tài liệu/lịch sử, bạn có thể dùng kiến thức bên ngoài nhưng phải nói rõ: 'Theo tài liệu thì không đề cập, nhưng theo kiến thức chung thì...'";
+            systemInstructionText += @"
+
+                QUY TẮC ĐỐI VỚI TÀI LIỆU ĐÍNH KÈM & BỐI CẢNH:
+                1. Ưu tiên sử dụng thông tin có trong các tài liệu đính kèm hoặc bối cảnh hội thoại gần đây để trả lời câu hỏi.
+                2. Nếu câu hỏi có liên quan đến học tập/môn học nhưng thông tin cụ thể không có trong tài liệu/lịch sử, bạn có thể dùng kiến thức học thuật bên ngoài để bổ sung nhưng cần nói rõ: 'Theo tài liệu môn học thì không đề cập trực tiếp vấn đề này, tuy nhiên theo kiến thức môn học...'
+                3. Tuyệt đối không được dùng kiến thức bên ngoài để trả lời các câu hỏi ngoài luồng (như thể thao, bóng đá, giải trí...). Vẫn phải áp dụng nghiêm ngặt quy tắc TỪ CHỐI đối với các chủ đề ngoài luồng học thuật.";
 
             if (!string.IsNullOrWhiteSpace(similarContext))
             {
